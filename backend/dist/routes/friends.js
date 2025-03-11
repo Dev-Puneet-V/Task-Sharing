@@ -15,7 +15,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const auth_1 = require("../middleware/auth");
 const User_1 = require("../models/User");
-const mongoose_1 = __importDefault(require("mongoose"));
 const Task_1 = require("../models/Task");
 const router = express_1.default.Router();
 // Send friend request
@@ -49,7 +48,7 @@ router.post("/request", auth_1.auth, (req, res) => __awaiter(void 0, void 0, voi
             from: (_d = req.user) === null || _d === void 0 ? void 0 : _d._id,
             status: "pending",
         });
-        const currentUser = yield User_1.User.findByIdAndUpdate((_e = req.user) === null || _e === void 0 ? void 0 : _e._id, {
+        yield User_1.User.findByIdAndUpdate((_e = req.user) === null || _e === void 0 ? void 0 : _e._id, {
             sentFriendRequests: [
                 ...(((_f = req.user) === null || _f === void 0 ? void 0 : _f.sentFriendRequests) || []),
                 {
@@ -67,7 +66,7 @@ router.post("/request", auth_1.auth, (req, res) => __awaiter(void 0, void 0, voi
 }));
 // Accept/Reject friend request
 router.patch("/request/:userId", auth_1.auth, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+    var _a, _b, _c, _d, _e;
     try {
         const { status } = req.body;
         if (!["accepted", "rejected"].includes(status)) {
@@ -78,44 +77,8 @@ router.patch("/request/:userId", auth_1.auth, (req, res) => __awaiter(void 0, vo
         if (!request) {
             return res.status(404).json({ error: "Friend request not found" });
         }
-        request.status = status;
-        if (status === "accepted" && req.user) {
-            // Add to friends list for both users
-            if (!req.user.friends) {
-                req.user.friends = [];
-            }
-            req.user.friends.push(new mongoose_1.default.Types.ObjectId(req.params.userId));
-            const friend = yield User_1.User.findById(req.params.userId);
-            if (friend) {
-                if (!friend.friends) {
-                    friend.friends = [];
-                }
-                friend.friends.push(req.user._id);
-                const sentRequest = (_c = friend.sentFriendRequests) === null || _c === void 0 ? void 0 : _c.find((request) => { var _a; return request.to.toString() === ((_a = req.user) === null || _a === void 0 ? void 0 : _a._id.toString()); });
-                if (sentRequest) {
-                    sentRequest.status = "accepted";
-                }
-                yield friend.save();
-            }
-        }
-        else if (status === "rejected") {
-            const sentRequest = (_e = (_d = req.user) === null || _d === void 0 ? void 0 : _d.sentFriendRequests) === null || _e === void 0 ? void 0 : _e.find((request) => request.to.toString() === req.params.userId);
-            if (sentRequest) {
-                sentRequest.status = "rejected";
-            }
-            const friend = yield User_1.User.findById(req.params.userId);
-            if (friend) {
-                const sentRequest = (_f = friend.sentFriendRequests) === null || _f === void 0 ? void 0 : _f.find((request) => { var _a; return request.to.toString() === ((_a = req.user) === null || _a === void 0 ? void 0 : _a._id.toString()); });
-                if (sentRequest) {
-                    sentRequest.status = "rejected";
-                }
-                yield friend.save();
-            }
-        }
-        yield User_1.User.findByIdAndUpdate((_g = req.user) === null || _g === void 0 ? void 0 : _g._id, {
-            friends: (_h = req.user) === null || _h === void 0 ? void 0 : _h.friends,
-            friendRequests: (_j = req.user) === null || _j === void 0 ? void 0 : _j.friendRequests,
-        });
+        yield User_1.User.findByIdAndUpdate((_c = req.user) === null || _c === void 0 ? void 0 : _c._id, Object.assign({ $pull: { friendRequests: { from: req.params.userId } } }, (status === "accepted" && { $push: { friends: req.params.userId } })));
+        yield User_1.User.findByIdAndUpdate(req.params.userId, Object.assign({ $pull: { sentFriendRequests: { to: (_d = req.user) === null || _d === void 0 ? void 0 : _d._id } } }, (status === "accepted" && { $push: { friends: (_e = req.user) === null || _e === void 0 ? void 0 : _e._id } })));
         res.json({ message: `Friend request ${status}` });
     }
     catch (error) {

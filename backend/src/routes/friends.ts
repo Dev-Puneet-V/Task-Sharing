@@ -97,49 +97,14 @@ router.patch("/request/:userId", auth, async (req: Request, res: any) => {
       return res.status(404).json({ error: "Friend request not found" });
     }
 
-    request.status = status;
-
-    if (status === "accepted" && req.user) {
-      // Add to friends list for both users
-      if (!req.user.friends) {
-        req.user.friends = [];
-      }
-      req.user.friends.push(new mongoose.Types.ObjectId(req.params.userId));
-      const friend = await User.findById(req.params.userId);
-      if (friend) {
-        if (!friend.friends) {
-          friend.friends = [];
-        }
-        friend.friends.push(req.user._id);
-        const sentRequest = friend.sentFriendRequests?.find(
-          (request) => request.to.toString() === req.user?._id.toString()
-        );
-        if (sentRequest) {
-          sentRequest.status = "accepted";
-        }
-        await friend.save();
-      }
-    } else if (status === "rejected") {
-      const sentRequest = req.user?.sentFriendRequests?.find(
-        (request) => request.to.toString() === req.params.userId
-      );
-      if (sentRequest) {
-        sentRequest.status = "rejected";
-      }
-      const friend = await User.findById(req.params.userId);
-      if (friend) {
-        const sentRequest = friend.sentFriendRequests?.find(
-          (request) => request.to.toString() === req.user?._id.toString()
-        );
-        if (sentRequest) {
-          sentRequest.status = "rejected";
-        }
-        await friend.save();
-      }
-    }
     await User.findByIdAndUpdate(req.user?._id, {
-      friends: req.user?.friends,
-      friendRequests: req.user?.friendRequests,
+      $pull: { friendRequests: { from: req.params.userId } },
+      ...(status === "accepted" && { $push: { friends: req.params.userId } }),
+    });
+
+    await User.findByIdAndUpdate(req.params.userId, {
+      $pull: { sentFriendRequests: { to: req.user?._id } },
+      ...(status === "accepted" && { $push: { friends: req.user?._id } }),
     });
 
     res.json({ message: `Friend request ${status}` });
