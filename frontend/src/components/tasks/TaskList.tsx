@@ -166,9 +166,9 @@ export const TaskList: React.FC = () => {
         }
       );
       setTasks((prevTasks) =>
-        prevTasks.map((task) => (task._id === taskId ? updatedTask : task))
+        prevTasks.map((task) => (task._id === taskId ? updatedTask?.task : task))
       );
-      if (updatedTask.sharedWith.length === 0) {
+      if (updatedTask?.task?.sharedWith.length === 0) {
         setSharedTasks((prevTasks) =>
           prevTasks.filter((task) => task._id !== taskId)
         );
