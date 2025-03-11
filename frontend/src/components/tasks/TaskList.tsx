@@ -148,9 +148,9 @@ export const TaskList: React.FC = () => {
         }
       );
       setTasks((prevTasks) =>
-        prevTasks.map((task) => (task._id === taskId ? updatedTask : task))
+        prevTasks.map((task) => (task._id === taskId ? updatedTask?.task : task))
       );
-      setSharedTasks((prevTasks) => [...prevTasks, updatedTask]);
+      setSharedTasks((prevTasks) => [...prevTasks, updatedTask?.task]);
     } catch (err: any) {
       console.error("Error sharing task:", err);
       setError(err.response?.data?.error || "Error sharing task");
