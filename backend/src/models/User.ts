@@ -13,6 +13,7 @@ interface IUser extends Document {
   updatedAt: Date;
 }
 
+
 const userSchema = new Schema<IUser>(
   {
     email: {
@@ -56,3 +57,6 @@ const userSchema = new Schema<IUser>(
 );
 
 export const User = mongoose.model<IUser>("User", userSchema);
+export type {
+  IUser
+}

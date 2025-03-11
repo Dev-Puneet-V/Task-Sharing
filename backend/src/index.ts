@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import authRoutes from "./routes/auth";
 import taskRoutes from "./routes/tasks";
 import friendRoutes from "./routes/friends";
+import userRoutes from "./routes/users";
 
 dotenv.config();
 
@@ -53,6 +54,7 @@ mongoose
 app.use("/api/auth", authRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/friends", friendRoutes);
+app.use("/api/users", userRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

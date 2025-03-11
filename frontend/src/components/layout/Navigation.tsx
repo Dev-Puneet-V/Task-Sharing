@@ -28,7 +28,7 @@ export const Navigation = () => {
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
               <Link
-                to="/tasks"
+                to="/"
                 className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 border-b-2 border-transparent hover:border-indigo-500"
               >
                 <ClipboardDocumentListIcon className="h-5 w-5 mr-1" />
@@ -104,7 +104,7 @@ export const Navigation = () => {
       <div className={`${isOpen ? "block" : "hidden"} sm:hidden`}>
         <div className="pt-2 pb-3 space-y-1">
           <Link
-            to="/tasks"
+            to="/"
             className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-indigo-500"
           >
             <div className="flex items-center">

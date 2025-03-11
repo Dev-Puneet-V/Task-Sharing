@@ -11,6 +11,7 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const auth_1 = __importDefault(require("./routes/auth"));
 const tasks_1 = __importDefault(require("./routes/tasks"));
 const friends_1 = __importDefault(require("./routes/friends"));
+const users_1 = __importDefault(require("./routes/users"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 5000;
@@ -46,6 +47,7 @@ mongoose_1.default
 app.use("/api/auth", auth_1.default);
 app.use("/api/tasks", tasks_1.default);
 app.use("/api/friends", friends_1.default);
+app.use("/api/users", users_1.default);
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });

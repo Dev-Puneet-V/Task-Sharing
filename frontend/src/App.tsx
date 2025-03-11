@@ -1,73 +1,77 @@
+import React from "react";
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
 } from "react-router-dom";
-import Cookies from "js-cookie";
 import { LoginForm } from "./components/auth/LoginForm";
 import { RegisterForm } from "./components/auth/RegisterForm";
 import { TaskList } from "./components/tasks/TaskList";
 import { Navigation } from "./components/layout/Navigation";
+import FriendsList from "./components/friends/FriendsList";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
-  const token = Cookies.get("token");
-  return token ? <>{children}</> : <Navigate to="/login" />;
+  const { isAuthenticated } = useAuth();
+  console.log(isAuthenticated);
+  return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
 };
 
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
-  const token = Cookies.get("token");
-  return !token ? <>{children}</> : <Navigate to="/tasks" />;
+  const { isAuthenticated } = useAuth();
+  return !isAuthenticated ? <>{children}</> : <Navigate to="/" />;
 };
 
-function App() {
+const App: React.FC = () => {
   return (
-    <Router>
-      <div className="min-h-screen bg-gray-50">
-        <Routes>
-          <Route
-            path="/login"
-            element={
-              <PublicRoute>
-                <LoginForm />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/register"
-            element={
-              <PublicRoute>
-                <RegisterForm />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/"
-            element={
-              <PrivateRoute>
-                <div>
-                  <Navigation />
-                  <TaskList />
-                </div>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/tasks"
-            element={
-              <PrivateRoute>
-                <div>
-                  <Navigation />
-                  <TaskList />
-                </div>
-              </PrivateRoute>
-            }
-          />
-          {/* Add more routes for friends and profile pages */}
-        </Routes>
-      </div>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <div className="min-h-screen bg-gray-50">
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <PrivateRoute>
+                  <div>
+                    <Navigation />
+                    <TaskList />
+                  </div>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/friends"
+              element={
+                <PrivateRoute>
+                  <div>
+                    <Navigation />
+                    <FriendsList />
+                  </div>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/login"
+              element={
+                <PublicRoute>
+                  <LoginForm />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/register"
+              element={
+                <PublicRoute>
+                  <RegisterForm />
+                </PublicRoute>
+              }
+            />
+          </Routes>
+        </div>
+      </Router>
+    </AuthProvider>
   );
-}
+};
 
 export default App;

@@ -130,7 +130,6 @@ router.patch("/:id", auth_1.auth, (req, res) => __awaiter(void 0, void 0, void 0
         res.json(task);
     }
     catch (error) {
-        console.error(error);
         res.status(400).json({ error: "Error updating task" });
     }
 }));

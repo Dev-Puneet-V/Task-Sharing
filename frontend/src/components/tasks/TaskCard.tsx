@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   PencilIcon,
   TrashIcon,
@@ -7,6 +7,14 @@ import {
   ClockIcon,
 } from "@heroicons/react/24/outline";
 import { format } from "date-fns";
+import api from "../../utils/axios";
+import ShareTaskModal from "./ShareTaskModal";
+
+interface Friend {
+  _id: string;
+  name: string;
+  email: string;
+}
 
 interface Task {
   _id: string;
@@ -21,11 +29,7 @@ interface Task {
     name: string;
     email: string;
   };
-  sharedWith: Array<{
-    _id: string;
-    name: string;
-    email: string;
-  }>;
+  sharedWith: Friend[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -34,20 +38,40 @@ interface TaskCardProps {
   task: Task;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<void>;
   onDelete: (taskId: string) => Promise<void>;
-  onShare: (taskId: string, userId: string) => Promise<void>;
+  onShare: (taskId: string, friendIds: string[]) => Promise<void>;
+  onUnshare: (taskId: string, friendIds: string[]) => Promise<void>;
 }
+
+type BaseUserData = {
+  _id: string;
+  name: string;
+  email: string;
+};
+
+type SelfUserData = BaseUserData & {
+  friends: string[];
+  friendRequests: {
+    from: string;
+    status: "pending" | "accepted" | "rejected";
+  }[];
+};
 
 const TaskCard: React.FC<TaskCardProps> = ({
   task,
   onUpdate,
   onDelete,
   onShare,
+  onUnshare,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTask, setEditedTask] = useState(task);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [shareEmail, setShareEmail] = useState("");
+  const shareEmailRef = useRef<HTMLInputElement>(null);
+  const [shareEmailUser, setShareEmailUser] = useState<
+    BaseUserData | SelfUserData | null
+  >(null);
   const [error, setError] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const priorityColors = {
     low: "bg-green-100 text-green-800",
@@ -74,10 +98,49 @@ const TaskCard: React.FC<TaskCardProps> = ({
     try {
       // In a real app, you would first search for the user by email
       // and get their ID. For now, we'll just show an error
+      //User types email -> send request and fetch user -> show in real time if user exists or not -> if user exists select -> at a time multiple users can be selected
+      const response = await api.get(
+        `/friends/e/query=${shareEmailRef?.current?.value}`
+      );
+      console.log(response.data);
+      setShareEmailUser(response.data);
       setError("User sharing not implemented yet");
       setShowShareModal(false);
     } catch (err) {
       setError("Failed to share task");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm("Are you sure you want to delete this task?")) return;
+    setIsDeleting(true);
+    try {
+      await onDelete(task._id);
+    } catch (error) {
+      console.error("Error deleting task:", error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleStatusChange = async (newStatus: Task["status"]) => {
+    try {
+      await onUpdate(task._id, { status: newStatus });
+    } catch (error) {
+      console.error("Error updating task status:", error);
+    }
+  };
+
+  const getPriorityColor = (priority?: string) => {
+    switch (priority) {
+      case "high":
+        return "text-red-600";
+      case "medium":
+        return "text-yellow-600";
+      case "low":
+        return "text-green-600";
+      default:
+        return "text-gray-600";
     }
   };
 
@@ -170,7 +233,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 <ShareIcon className="h-5 w-5 text-gray-500" />
               </button>
               <button
-                onClick={() => onDelete(task._id)}
+                onClick={handleDelete}
+                disabled={isDeleting}
                 className="p-1 hover:bg-gray-100 rounded"
               >
                 <TrashIcon className="h-5 w-5 text-gray-500" />
@@ -225,32 +289,13 @@ const TaskCard: React.FC<TaskCardProps> = ({
       )}
 
       {showShareModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg w-96">
-            <h3 className="text-lg font-semibold mb-4">Share Task</h3>
-            <input
-              type="email"
-              placeholder="Enter email address"
-              value={shareEmail}
-              onChange={(e) => setShareEmail(e.target.value)}
-              className="w-full border rounded-md px-3 py-2 mb-4"
-            />
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowShareModal(false)}
-                className="px-4 py-2 border rounded-md"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleShare}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md"
-              >
-                Share
-              </button>
-            </div>
-          </div>
-        </div>
+        <ShareTaskModal
+          taskId={task._id}
+          currentSharedWith={task.sharedWith}
+          onClose={() => setShowShareModal(false)}
+          onShare={onShare}
+          onUnshare={onUnshare}
+        />
       )}
     </div>
   );
