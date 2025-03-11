@@ -28,6 +28,29 @@ const cookieOptions = {
   // sameSite: "strict" as const,
 };
 
+router.get("/me", async (req: Request, res: any) => {
+  try {
+    const token = req.cookies.token;
+    if (!token) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    const decoded: any = jwt.verify(
+      token,
+      process.env.JWT_SECRET || "your-secret-key"
+    );
+    const user = await User.findById(decoded._id);
+
+    if (!user) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    res.json(user);
+  } catch (error) {
+    res.status(400).json({ error: "Error fetching user" });
+  }
+});
+
 // Register
 router.post("/register", (async (req: RegisterRequest, res: Response) => {
   try {

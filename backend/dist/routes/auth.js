@@ -24,6 +24,24 @@ const cookieOptions = {
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     // sameSite: "strict" as const,
 };
+router.get("/me", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const token = req.cookies.token;
+        if (!token) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+        const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET || "your-secret-key");
+        const user = yield User_1.User.findById(decoded._id);
+        if (!user) {
+            res.status(401).json({ error: "Unauthorized" });
+            return;
+        }
+        res.json(user);
+    }
+    catch (error) {
+        res.status(400).json({ error: "Error fetching user" });
+    }
+}));
 // Register
 router.post("/register", ((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
