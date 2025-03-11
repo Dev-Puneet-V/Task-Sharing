@@ -83,7 +83,7 @@ const ShareTaskModal: React.FC<ShareTaskModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+    <div className="z-1000 fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg w-full max-w-md">
         <div className="p-4 border-b flex justify-between items-center">
           <h2 className="text-xl font-semibold">Share Task</h2>
