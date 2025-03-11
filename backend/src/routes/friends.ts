@@ -306,6 +306,11 @@ router.delete("/:friendId", auth, async (req: Request, res: any) => {
       $pull: { friends: friendId },
     });
 
+    //Remove all tasks shared with the friend
+    await Task.updateMany(
+      { sharedWith: friendId },
+      { $pull: { sharedWith: friendId } }
+    );
     // Remove current user from friend's friends list
     await User.findByIdAndUpdate(friendId, {
       $pull: { friends: req.user?._id },

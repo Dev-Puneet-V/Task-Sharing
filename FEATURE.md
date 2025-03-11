@@ -4,7 +4,6 @@
 
 ### Critical Bugs to Fix
 
-- [ ] Remove shared tasks when user is removed from friend list
 - [ ] Restrict shared task permissions (view-only, no edit/delete/share)
 - [ ] Fix friend search in task sharing modal
 - [ ] Filter shared tasks in "My Tasks" view

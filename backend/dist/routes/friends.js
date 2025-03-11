@@ -251,6 +251,8 @@ router.delete("/:friendId", auth_1.auth, (req, res) => __awaiter(void 0, void 0,
         yield User_1.User.findByIdAndUpdate((_a = req.user) === null || _a === void 0 ? void 0 : _a._id, {
             $pull: { friends: friendId },
         });
+        //Remove all tasks shared with the friend
+        yield Task_1.Task.updateMany({ sharedWith: friendId }, { $pull: { sharedWith: friendId } });
         // Remove current user from friend's friends list
         yield User_1.User.findByIdAndUpdate(friendId, {
             $pull: { friends: (_b = req.user) === null || _b === void 0 ? void 0 : _b._id },
