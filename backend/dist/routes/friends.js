@@ -20,7 +20,7 @@ const Task_1 = require("../models/Task");
 const router = express_1.default.Router();
 // Send friend request
 router.post("/request", auth_1.auth, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e, _f;
     try {
         const { email } = req.body;
         const friend = (yield User_1.User.findOne({ email }));
@@ -41,9 +41,22 @@ router.post("/request", auth_1.auth, (req, res) => __awaiter(void 0, void 0, voi
         if (existingRequest) {
             return res.status(400).json({ error: "Friend request already sent" });
         }
+        const existingSentRequest = friend.sentFriendRequests.find((request) => { var _a; return request.to.toString() === ((_a = req.user) === null || _a === void 0 ? void 0 : _a._id.toString()); });
+        if (existingSentRequest) {
+            return res.status(400).json({ error: "Friend request already sent" });
+        }
         friend.friendRequests.push({
             from: (_d = req.user) === null || _d === void 0 ? void 0 : _d._id,
             status: "pending",
+        });
+        const currentUser = yield User_1.User.findByIdAndUpdate((_e = req.user) === null || _e === void 0 ? void 0 : _e._id, {
+            sentFriendRequests: [
+                ...(((_f = req.user) === null || _f === void 0 ? void 0 : _f.sentFriendRequests) || []),
+                {
+                    to: friend._id,
+                    status: "pending",
+                },
+            ],
         });
         yield friend.save();
         res.json({ message: "Friend request sent successfully" });
@@ -54,7 +67,7 @@ router.post("/request", auth_1.auth, (req, res) => __awaiter(void 0, void 0, voi
 }));
 // Accept/Reject friend request
 router.patch("/request/:userId", auth_1.auth, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
     try {
         const { status } = req.body;
         if (!["accepted", "rejected"].includes(status)) {
@@ -78,12 +91,30 @@ router.patch("/request/:userId", auth_1.auth, (req, res) => __awaiter(void 0, vo
                     friend.friends = [];
                 }
                 friend.friends.push(req.user._id);
+                const sentRequest = (_c = friend.sentFriendRequests) === null || _c === void 0 ? void 0 : _c.find((request) => { var _a; return request.to.toString() === ((_a = req.user) === null || _a === void 0 ? void 0 : _a._id.toString()); });
+                if (sentRequest) {
+                    sentRequest.status = "accepted";
+                }
                 yield friend.save();
             }
         }
-        yield User_1.User.findByIdAndUpdate((_c = req.user) === null || _c === void 0 ? void 0 : _c._id, {
-            friends: (_d = req.user) === null || _d === void 0 ? void 0 : _d.friends,
-            friendRequests: (_e = req.user) === null || _e === void 0 ? void 0 : _e.friendRequests,
+        else if (status === "rejected") {
+            const sentRequest = (_e = (_d = req.user) === null || _d === void 0 ? void 0 : _d.sentFriendRequests) === null || _e === void 0 ? void 0 : _e.find((request) => request.to.toString() === req.params.userId);
+            if (sentRequest) {
+                sentRequest.status = "rejected";
+            }
+            const friend = yield User_1.User.findById(req.params.userId);
+            if (friend) {
+                const sentRequest = (_f = friend.sentFriendRequests) === null || _f === void 0 ? void 0 : _f.find((request) => { var _a; return request.to.toString() === ((_a = req.user) === null || _a === void 0 ? void 0 : _a._id.toString()); });
+                if (sentRequest) {
+                    sentRequest.status = "rejected";
+                }
+                yield friend.save();
+            }
+        }
+        yield User_1.User.findByIdAndUpdate((_g = req.user) === null || _g === void 0 ? void 0 : _g._id, {
+            friends: (_h = req.user) === null || _h === void 0 ? void 0 : _h.friends,
+            friendRequests: (_j = req.user) === null || _j === void 0 ? void 0 : _j.friendRequests,
         });
         res.json({ message: `Friend request ${status}` });
     }
@@ -143,6 +174,9 @@ router.get("/new", auth_1.auth, (req, res) => __awaiter(void 0, void 0, void 0, 
         const pendingRequestIds = currentUser.friendRequests
             .filter((request) => request.status === "pending")
             .map((request) => request.from);
+        const sentRequestIds = currentUser.sentFriendRequests
+            .filter((request) => request.status === "pending")
+            .map((request) => request.to);
         // Find users by email or name who are not already friends or have pending requests
         const potentialFriends = yield User_1.User.find({
             $or: [
@@ -154,6 +188,7 @@ router.get("/new", auth_1.auth, (req, res) => __awaiter(void 0, void 0, void 0, 
                     (_b = req.user) === null || _b === void 0 ? void 0 : _b._id, // Exclude self
                     ...friendIds, // Exclude current friends
                     ...pendingRequestIds, // Exclude users with pending requests
+                    ...sentRequestIds, // Exclude users with pending requests
                 ],
             },
         })

@@ -9,10 +9,13 @@ interface IUser extends Document {
     from: mongoose.Types.ObjectId;
     status: "pending" | "accepted" | "rejected";
   }[];
+  sentFriendRequests: {
+    to: mongoose.Types.ObjectId;
+    status: "pending" | "accepted" | "rejected";
+  }[];
   createdAt: Date;
   updatedAt: Date;
 }
-
 
 const userSchema = new Schema<IUser>(
   {
@@ -52,11 +55,23 @@ const userSchema = new Schema<IUser>(
         },
       },
     ],
+    sentFriendRequests: [
+      {
+        to: {
+          type: Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+        status: {
+          type: String,
+          enum: ["pending", "accepted", "rejected"],
+          default: "pending",
+        },
+      },
+    ],
   },
   { timestamps: true }
 );
 
 export const User = mongoose.model<IUser>("User", userSchema);
-export type {
-  IUser
-}
+export type { IUser };

@@ -14,6 +14,10 @@ interface IUser extends mongoose.Document {
     from: mongoose.Types.ObjectId;
     status: string;
   }>;
+  sentFriendRequests: Array<{
+    to: mongoose.Types.ObjectId;
+    status: string;
+  }>;
 }
 
 // Send friend request
@@ -46,9 +50,26 @@ router.post("/request", auth, async (req: Request, res: any) => {
       return res.status(400).json({ error: "Friend request already sent" });
     }
 
+    const existingSentRequest = friend.sentFriendRequests.find(
+      (request) => request.to.toString() === req.user?._id.toString()
+    );
+
+    if (existingSentRequest) {
+      return res.status(400).json({ error: "Friend request already sent" });
+    }
+
     friend.friendRequests.push({
       from: req.user?._id as mongoose.Types.ObjectId,
       status: "pending",
+    });
+    await User.findByIdAndUpdate(req.user?._id, {
+      sentFriendRequests: [
+        ...(req.user?.sentFriendRequests || []),
+        {
+          to: friend._id as mongoose.Types.ObjectId,
+          status: "pending",
+        },
+      ],
     });
 
     await friend.save();
@@ -90,10 +111,32 @@ router.patch("/request/:userId", auth, async (req: Request, res: any) => {
           friend.friends = [];
         }
         friend.friends.push(req.user._id);
+        const sentRequest = friend.sentFriendRequests?.find(
+          (request) => request.to.toString() === req.user?._id.toString()
+        );
+        if (sentRequest) {
+          sentRequest.status = "accepted";
+        }
+        await friend.save();
+      }
+    } else if (status === "rejected") {
+      const sentRequest = req.user?.sentFriendRequests?.find(
+        (request) => request.to.toString() === req.params.userId
+      );
+      if (sentRequest) {
+        sentRequest.status = "rejected";
+      }
+      const friend = await User.findById(req.params.userId);
+      if (friend) {
+        const sentRequest = friend.sentFriendRequests?.find(
+          (request) => request.to.toString() === req.user?._id.toString()
+        );
+        if (sentRequest) {
+          sentRequest.status = "rejected";
+        }
         await friend.save();
       }
     }
-
     await User.findByIdAndUpdate(req.user?._id, {
       friends: req.user?.friends,
       friendRequests: req.user?.friendRequests,
@@ -164,6 +207,10 @@ router.get("/new", auth, async (req: Request, res: any) => {
       .filter((request) => request.status === "pending")
       .map((request) => request.from);
 
+    const sentRequestIds = currentUser.sentFriendRequests
+      .filter((request) => request.status === "pending")
+      .map((request) => request.to);
+
     // Find users by email or name who are not already friends or have pending requests
     const potentialFriends = await User.find({
       $or: [
@@ -175,6 +222,7 @@ router.get("/new", auth, async (req: Request, res: any) => {
           req.user?._id, // Exclude self
           ...friendIds, // Exclude current friends
           ...pendingRequestIds, // Exclude users with pending requests
+          ...sentRequestIds, // Exclude users with pending requests
         ],
       },
     })

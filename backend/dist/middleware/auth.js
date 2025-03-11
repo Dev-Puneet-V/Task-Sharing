@@ -31,6 +31,7 @@ const auth = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () 
             _id: new mongoose_1.default.Types.ObjectId(user === null || user === void 0 ? void 0 : user._id),
             friends: user.friends,
             friendRequests: user.friendRequests,
+            sentFriendRequests: user.sentFriendRequests,
         };
         req.token = token;
         next();

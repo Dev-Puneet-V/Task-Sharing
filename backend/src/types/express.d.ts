@@ -10,6 +10,10 @@ declare global {
           from: Types.ObjectId;
           status: string;
         }>;
+        sentFriendRequests?: Array<{
+          to: Types.ObjectId;
+          status: string;
+        }>;
       };
       token?: string;
     }

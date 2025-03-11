@@ -72,5 +72,19 @@ const userSchema = new mongoose_1.Schema({
             },
         },
     ],
+    sentFriendRequests: [
+        {
+            to: {
+                type: mongoose_1.Schema.Types.ObjectId,
+                ref: "User",
+                required: true,
+            },
+            status: {
+                type: String,
+                enum: ["pending", "accepted", "rejected"],
+                default: "pending",
+            },
+        },
+    ],
 }, { timestamps: true });
 exports.User = mongoose_1.default.model("User", userSchema);

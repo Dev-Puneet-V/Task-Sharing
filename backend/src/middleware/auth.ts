@@ -30,6 +30,7 @@ export const auth = async (
       _id: new mongoose.Types.ObjectId(user?._id as string),
       friends: user.friends,
       friendRequests: user.friendRequests,
+      sentFriendRequests: user.sentFriendRequests,
     };
     req.token = token;
     next();
