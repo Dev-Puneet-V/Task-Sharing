@@ -12,6 +12,7 @@ const auth_1 = __importDefault(require("./routes/auth"));
 const tasks_1 = __importDefault(require("./routes/tasks"));
 const friends_1 = __importDefault(require("./routes/friends"));
 const users_1 = __importDefault(require("./routes/users"));
+const WebSocketService_1 = __importDefault(require("./services/websocket/WebSocketService"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 5000;
@@ -38,16 +39,28 @@ app.use((req, res, next) => {
     });
     next();
 });
-// Database connection
-mongoose_1.default
-    .connect(process.env.MONGODB_URI || "mongodb://localhost:27017/task-tracker")
-    .then(() => console.log("Connected to MongoDB"))
-    .catch((error) => console.error("MongoDB connection error:", error));
 // Routes
 app.use("/api/auth", auth_1.default);
 app.use("/api/tasks", tasks_1.default);
 app.use("/api/friends", friends_1.default);
 app.use("/api/users", users_1.default);
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+// Initialize WebSocket after database connection
+mongoose_1.default
+    .connect(process.env.MONGODB_URI || "mongodb://localhost:27017/task-tracker")
+    .then(() => {
+    console.log("Connected to MongoDB");
+    // Start Express server
+    app.listen(PORT, () => {
+        console.log(`Express server is running on port ${PORT}`);
+        // Initialize WebSocket server
+        try {
+            const wsService = WebSocketService_1.default.getInstance();
+            wsService.connect();
+            console.log("WebSocket server initialized");
+        }
+        catch (error) {
+            console.error("Failed to initialize WebSocket server:", error);
+        }
+    });
+})
+    .catch((error) => console.error("MongoDB connection error:", error));
