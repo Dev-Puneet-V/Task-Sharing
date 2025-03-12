@@ -8,7 +8,6 @@ import {
 import TaskCard from "./TaskCard";
 import CreateTaskModal from "./CreateTaskModal";
 import api from "../../utils/axios";
-
 interface Task {
   _id: string;
   title: string;

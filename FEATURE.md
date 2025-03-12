@@ -4,7 +4,6 @@
 
 ### Critical Bugs to Fix
 
-- [ ] Restrict shared task permissions (view-only, no edit/delete/share)
 - [ ] Fix friend search in task sharing modal
 - [ ] Filter shared tasks in "My Tasks" view
 

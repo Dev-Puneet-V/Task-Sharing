@@ -40,7 +40,7 @@ router.post(
 router.get("/", auth, async (req: Request, res: Response) => {
   try {
     const match: any = {
-      $or: [{ owner: req.user?._id }, { sharedWith: req.user?._id }],
+      $or: [{ owner: req.user?._id }],
     };
 
     // Filter by status
