@@ -103,7 +103,7 @@ export const TaskList: React.FC = () => {
       const { data: newTask } = await api.post("/tasks", taskData);
       console.log("Created task:", newTask);
 
-      setTasks((prevTasks) => [newTask, ...prevTasks]);
+      setTasks((prevTasks = []) => [newTask, ...prevTasks]);
       setShowCreateModal(false);
       setError("");
     } catch (err: any) {
@@ -119,7 +119,7 @@ export const TaskList: React.FC = () => {
         `/tasks/${taskId}`,
         updates
       );
-      setTasks((prevTasks) =>
+      setTasks((prevTasks = []) =>
         prevTasks.map((task) => (task._id === taskId ? updatedTask : task))
       );
     } catch (err: any) {
@@ -146,10 +146,11 @@ export const TaskList: React.FC = () => {
           friendIds,
         }
       );
-      setTasks((prevTasks) =>
+      console.log("Updated task:", updatedTask, taskId);
+      setTasks((prevTasks = []) =>
         prevTasks.map((task) => (task._id === taskId ? updatedTask?.task : task))
       );
-      setSharedTasks((prevTasks) => [...prevTasks, updatedTask?.task]);
+      setSharedTasks((prevTasks = []) => [...prevTasks, updatedTask]);
     } catch (err: any) {
       console.error("Error sharing task:", err);
       setError(err.response?.data?.error || "Error sharing task");
@@ -164,12 +165,12 @@ export const TaskList: React.FC = () => {
           data: { friendIds },
         }
       );
-      setTasks((prevTasks) =>
+      setTasks((prevTasks = []) =>
         prevTasks.map((task) => (task._id === taskId ? updatedTask?.task : task))
       );
       if (updatedTask?.task?.sharedWith.length === 0) {
-        setSharedTasks((prevTasks) =>
-          prevTasks.filter((task) => task._id !== taskId)
+        setSharedTasks((prevTasks = []) =>
+          prevTasks?.filter((task) => task._id !== taskId)
         );
       }
     } catch (err: any) {
@@ -195,7 +196,7 @@ export const TaskList: React.FC = () => {
                   : "text-gray-600"
               }`}
             >
-              My Tasks ({tasks.length})
+              My Tasks ({tasks ? tasks?.length : 0})
             </button>
             <button
               onClick={() => setShowSharedTasks(true)}
@@ -205,7 +206,7 @@ export const TaskList: React.FC = () => {
                   : "text-gray-600"
               }`}
             >
-              Shared with Me ({sharedWithMeTasks.length})
+              Shared with Me ({sharedWithMeTasks ? sharedWithMeTasks?.length : 0})
             </button>
           </div>
         </div>
@@ -264,15 +265,15 @@ export const TaskList: React.FC = () => {
         <div className="text-center py-8">Loading...</div>
       ) : error ? (
         <div className="text-center py-8 text-red-600">{error}</div>
-      ) : displayedTasks.length === 0 ? (
+      ) : displayedTasks?.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
           {showSharedTasks ? "No tasks shared with you" : "No tasks found"}
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {displayedTasks.map((task) => (
+          {displayedTasks?.map((task) => (
             <TaskCard
-              key={task._id}
+              key={task?._id}
               task={task}
               onUpdate={handleUpdateTask}
               onDelete={handleDeleteTask}

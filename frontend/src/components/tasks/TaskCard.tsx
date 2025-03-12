@@ -66,8 +66,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
   onUnshare,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [editedTitle, setEditedTitle] = useState(task.title);
-  const [editedDescription, setEditedDescription] = useState(task.description);
+  const [editedTitle, setEditedTitle] = useState(task?.title);
+  const [editedDescription, setEditedDescription] = useState(task?.description);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const shareEmailRef = useRef<HTMLInputElement>(null);
@@ -78,7 +78,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
   const { user } = useAuth();
 
   // Check if current user is the owner
-  const isOwner = user?._id === task.owner._id;
+  const isOwner = user?._id === task?.owner._id;
 
   const priorityColors = {
     low: "bg-green-100 text-green-800",
@@ -95,7 +95,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
   const handleUpdate = async () => {
     if (!isOwner) return; // Only owner can update title/description
     try {
-      await onUpdate(task._id, {
+      await onUpdate(task?._id, {
         title: editedTitle,
         description: editedDescription,
       });
@@ -113,7 +113,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
   const handleDelete = async () => {
     if (!isOwner) return; // Only owner can delete
     try {
-      await onDelete(task._id);
+      await onDelete(task?._id);
       setShowDeleteConfirm(false);
     } catch (error) {
       console.error("Error deleting task:", error);
@@ -122,7 +122,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
   const handleStatusChange = async (newStatus: Task["status"]) => {
     try {
-      await onUpdate(task._id, { status: newStatus });
+      await onUpdate(task?._id, { status: newStatus });
     } catch (error) {
       console.error("Error updating task status:", error);
     }
@@ -147,8 +147,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
         <>
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h3 className="text-lg font-semibold mb-2">{task.title}</h3>
-              <p className="text-gray-600 mb-4">{task.description}</p>
+              <h3 className="text-lg font-semibold mb-2">{task?.title}</h3>
+              <p className="text-gray-600 mb-4">{task?.description}</p>
             </div>
             {isOwner && (
               <div className="flex space-x-2">
@@ -211,7 +211,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
       )}
 
       <div className="flex flex-wrap gap-2 mb-4">
-        {task.tags?.map((tag) => (
+        {task?.tags?.map((tag) => (
           <span
             key={tag}
             className="px-2 py-1 bg-gray-100 rounded-full text-sm"
@@ -225,14 +225,14 @@ const TaskCard: React.FC<TaskCardProps> = ({
         <div className="flex items-center">
           <span className="font-medium mr-2">Status:</span>
           <select
-            value={task.status}
+            value={task?.status}
             onChange={(e) =>
               handleStatusChange(e.target.value as Task["status"])
             }
             className={`p-1 rounded ${
               !isOwner ? "bg-gray-100" : "bg-white border"
             }`}
-            disabled={!isOwner && task.status === "completed"} // Non-owners can only mark as completed
+            disabled={!isOwner && task?.status === "completed"} // Non-owners can only mark as completed
           >
             <option value="pending">Pending</option>
             <option value="in_progress">In Progress</option>
@@ -244,27 +244,27 @@ const TaskCard: React.FC<TaskCardProps> = ({
           <span className="font-medium mr-2">Priority:</span>
           <span
             className={`px-2 py-1 rounded-full text-sm ${getPriorityColor(
-              task.priority
+              task?.priority
             )}`}
           >
-            {task.priority || "none"}
+            {task?.priority || "none"}
           </span>
         </div>
 
-        {task.dueDate && (
+        {task?.dueDate && (
           <div className="flex items-center">
             <span className="font-medium mr-2">Due:</span>
-            <span>{new Date(task.dueDate).toLocaleDateString()}</span>
+            <span>{new Date(task?.dueDate).toLocaleDateString()}</span>
           </div>
         )}
       </div>
 
       {/* Shared with section */}
-      {task.sharedWith.length > 0 && (
+      {task?.sharedWith.length > 0 && (
         <div className="mt-4 pt-4 border-t">
           <h4 className="text-sm font-medium mb-2">Shared with:</h4>
           <div className="flex flex-wrap gap-2">
-            {task.sharedWith.map((user) => (
+            {task?.sharedWith.map((user) => (
               <span
                 key={user._id}
                 className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
@@ -302,8 +302,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
       {showShareModal && (
         <ShareTaskModal
-          taskId={task._id}
-          currentSharedWith={task.sharedWith}
+          taskId={task?._id}
+          currentSharedWith={task?.sharedWith}
           onClose={() => setShowShareModal(false)}
           onShare={onShare}
           onUnshare={onUnshare}

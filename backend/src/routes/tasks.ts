@@ -1,18 +1,10 @@
 import express, { Request, Response, Router } from "express";
 import { auth } from "../middleware/auth";
-import { Task } from "../models/Task";
-import mongoose from "mongoose";
+import { TaskService } from "../services/task/TaskService";
+import { TaskBody } from "../services/task/types";
 
 const router: Router = express.Router();
-
-interface TaskBody {
-  title: string;
-  description: string;
-  dueDate?: Date;
-  priority?: "low" | "medium" | "high";
-  status: "todo" | "in_progress" | "completed";
-  tags?: string[];
-}
+const taskService = new TaskService();
 
 // Create a new task
 router.post(
@@ -20,15 +12,7 @@ router.post(
   auth,
   async (req: Request<{}, {}, TaskBody>, res: Response) => {
     try {
-      const task = new Task({
-        ...req.body,
-        owner: req.user?._id,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-
-      await task.save();
-      await task.populate("owner", "name email");
+      const task = await taskService.createTask(req.user?._id as unknown as string, req.body);
       res.status(201).json(task);
     } catch (error) {
       res.status(400).json({ error: "Error creating task" });
@@ -39,165 +23,87 @@ router.post(
 // Get all tasks with filters
 router.get("/", auth, async (req: Request, res: Response) => {
   try {
-    const match: any = {
-      $or: [{ owner: req.user?._id }],
-    };
-
-    // Filter by status
-    if (req.query.status) {
-      match.status = req.query.status;
-    }
-
-    // Filter by priority
-    if (req.query.priority) {
-      match.priority = req.query.priority;
-    }
-
-    // Filter by tags
-    if (req.query.tag) {
-      match.tags = req.query.tag;
-    }
-
-    // Search by title or description
-    if (req.query.search) {
-      match.$or = [
-        { title: { $regex: req.query.search, $options: "i" } },
-        { description: { $regex: req.query.search, $options: "i" } },
-      ];
-    }
-
-    const sort: any = {};
-    if (req.query.sortBy) {
-      const parts = (req.query.sortBy as string).split(":");
-      sort[parts[0]] = parts[1] === "desc" ? -1 : 1;
-    } else {
-      // Default sort by createdAt desc
-      sort.createdAt = -1;
-    }
-
-    const tasks = await Task.find(match)
-      .populate("owner", "name email")
-      .populate("sharedWith", "name email")
-      .sort(sort)
-      .limit(parseInt(req.query.limit as string) || 10)
-      .skip(parseInt(req.query.skip as string) || 0);
-
-    const total = await Task.countDocuments(match);
-
-    res.json({
-      tasks,
-      total,
-      hasMore:
-        total >
-        (parseInt(req.query.skip as string) || 0) +
-          (parseInt(req.query.limit as string) || 10),
+    const result = await taskService.getTasks(req.user?._id as unknown as string, {
+      status: req.query.status as string,
+      priority: req.query.priority as string,
+      tag: req.query.tag as string,
+      search: req.query.search as string,
+      sortBy: req.query.sortBy as string,
+      limit: parseInt(req.query.limit as string),
+      skip: parseInt(req.query.skip as string),
     });
+
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: "Error fetching tasks" });
   }
 });
 
 // Get a specific task by ID
-router.get("/:id", auth, async (req: Request, res: any) => {
+router.get("/:id", auth, async (req: Request, res: Response) => {
   try {
-    const task = await Task.findOne({
-      _id: req.params.id,
-      $or: [{ owner: req.user?._id }, { sharedWith: req.user?._id }],
-    })
-      .populate("owner", "name email")
-      .populate("sharedWith", "name email");
-
-    if (!task) {
-      return res.status(404).json({ error: "Task not found" });
-    }
-
+    const task = await taskService.getTaskById(req.params.id, req.user?._id as unknown as string);
     res.json(task);
-  } catch (error) {
-    res.status(500).json({ error: "Error fetching task" });
+  } catch (error: any) {
+    if (error.message === "Task not found") {
+      res.status(404).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: "Error fetching task" });
+    }
   }
 });
 
 // Update a task
-router.patch("/:id", auth, async (req: Request, res: any) => {
+router.patch("/:id", auth, async (req: Request, res: Response) => {
   try {
-    const task = await Task.findOne({
-      _id: req.params.id,
-      $or: [{ owner: req.user?._id }, { sharedWith: req.user?._id }],
-    });
-
-    if (!task) {
-      return res.status(404).json({ error: "Task not found" });
-    }
-
-    // Only owner can update certain fields
-    if (task.owner.toString() !== req.user?._id.toString()) {
-      const allowedUpdates = ["status"];
-      const updates = Object.keys(req.body);
-      const isValidOperation = updates.every((update) =>
-        allowedUpdates.includes(update)
-      );
-
-      if (!isValidOperation) {
-        return res.status(400).json({ error: "Invalid updates" });
-      }
-    }
-
-    Object.assign(task, { ...req.body, updatedAt: new Date() });
-    await task.save();
-    await task.populate("owner", "name email");
-    await task.populate("sharedWith", "name email");
-
+    const task = await taskService.updateTask(
+      req.params.id,
+      req.user?._id as unknown as string,
+      req.body
+    );
     res.json(task);
-  } catch (error) {
-    res.status(400).json({ error: "Error updating task" });
+  } catch (error: any) {
+    if (error.message === "Task not found") {
+      res.status(404).json({ error: error.message });
+    } else if (error.message === "Invalid updates") {
+      res.status(400).json({ error: error.message });
+    } else {
+      res.status(400).json({ error: "Error updating task" });
+    }
   }
 });
 
 // Delete a task
-router.delete("/:id", auth, async (req: Request, res: any) => {
+router.delete("/:id", auth, async (req: Request, res: Response) => {
   try {
-    const task = await Task.findOneAndDelete({
-      _id: req.params.id,
-      owner: req.user?._id,
-    });
-
-    if (!task) {
-      return res.status(404).json({ error: "Task not found" });
-    }
-
+    const task = await taskService.deleteTask(req.params.id, req.user?._id as unknown as string);
     res.json({ message: "Task deleted successfully", task });
-  } catch (error) {
-    res.status(500).json({ error: "Error deleting task" });
+  } catch (error: any) {
+    if (error.message === "Task not found") {
+      res.status(404).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: "Error deleting task" });
+    }
   }
-});
+}); 
 
 // Share a task with another user
-router.post("/:id/share", auth, async (req: Request, res: any) => {
+router.post("/:id/share", auth, async (req: Request, res: Response) => {
   try {
-    const { userId } = req.body;
-    const task = await Task.findOne({
-      _id: req.params.id,
-      owner: req.user?._id,
-    });
-
-    if (!task) {
-      return res.status(404).json({ error: "Task not found" });
-    }
-
-    if (task.sharedWith.includes(userId)) {
-      return res
-        .status(400)
-        .json({ error: "Task already shared with this user" });
-    }
-
-    task.sharedWith.push(new mongoose.Types.ObjectId(userId));
-    await task.save();
-    await task.populate("owner", "name email");
-    await task.populate("sharedWith", "name email");
-
+    const task = await taskService.shareTask(
+      req.params.id,
+      req.user?._id as unknown as string,
+      req.body.userId
+    );
     res.json(task);
-  } catch (error) {
-    res.status(400).json({ error: "Error sharing task" });
+  } catch (error: any) {
+    if (error.message === "Task not found") {
+      res.status(404).json({ error: error.message });
+    } else if (error.message === "Task already shared with this user") {
+      res.status(400).json({ error: error.message });
+    } else {
+      res.status(400).json({ error: "Error sharing task" });
+    }
   }
 });
 
