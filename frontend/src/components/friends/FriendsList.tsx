@@ -54,6 +54,7 @@ const FriendsList: React.FC = () => {
   const handleSendRequest = async (email: string) => {
     try {
       await api.post("/friends/request", { email });
+      setSearchResults(searchResults.filter((user) => user.email !== email));
       setShowAddFriend(false);
       setError("");
     } catch (err: any) {

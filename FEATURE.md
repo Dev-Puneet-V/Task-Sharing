@@ -4,8 +4,7 @@
 
 ### Critical Bugs to Fix
 
-- [ ] Fix friend search in task sharing modal
-- [ ] Filter shared tasks in "My Tasks" view
+- CURRENTLY NO TASKS
 
 ### High Priority Features
 
