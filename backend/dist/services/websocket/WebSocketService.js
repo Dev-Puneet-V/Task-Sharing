@@ -71,7 +71,7 @@ class WebSocketService {
                     }
                     // Attach userId to request for later use
                     info.req.userId = userId;
-                    // cb(true);
+                    cb(true);
                 }
                 catch (error) {
                     console.error("WebSocket verification error:", error);
@@ -141,16 +141,18 @@ class WebSocketService {
             console.error(`No client found for userId: ${userId}`);
             return;
         }
+        console.log(message);
         switch (message.type) {
-            case "JOIN_TASK":
-                client.activeRooms.add(message.payload.taskId);
+            case "JOIN_ROOM":
+                client.activeRooms.add(message.payload.roomId);
                 break;
-            case "LEAVE_TASK":
-                client.activeRooms.delete(message.payload.taskId);
+            case "LEAVE_ROOM":
+                client.activeRooms.delete(message.payload.roomId);
                 break;
             default:
                 console.log(`Unhandled message type: ${message.type}`);
         }
+        console.log(client);
     }
     addClient(ws, userId) {
         const client = {

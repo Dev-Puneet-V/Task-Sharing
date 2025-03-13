@@ -11,7 +11,7 @@ interface WebSocketClient {
 }
 
 interface WebSocketMessage {
-  type: "JOIN_TASK" | "LEAVE_TASK" | "TASK_UPDATE";
+  type: "JOIN_ROOM" | "LEAVE_ROOM" | "TASK_UPDATE";
   payload: Record<string, any>;
 }
 
@@ -46,7 +46,7 @@ class WebSocketService {
 
             // Attach userId to request for later use
             (info.req as any).userId = userId;
-            // cb(true);
+            cb(true);
           } catch (error) {
             console.error("WebSocket verification error:", error);
             cb(false, 500, "Internal server error");
@@ -128,15 +128,16 @@ class WebSocketService {
     }
 
     switch (message.type) {
-      case "JOIN_TASK":
-        client.activeRooms.add(message.payload.taskId);
+      case "JOIN_ROOM":
+        client.activeRooms.add(message.payload.roomId);
         break;
-      case "LEAVE_TASK":
-        client.activeRooms.delete(message.payload.taskId);
+      case "LEAVE_ROOM":
+        client.activeRooms.delete(message.payload.roomId);
         break;
       default:
         console.log(`Unhandled message type: ${message.type}`);
     }
+    console.log(client);
   }
 
   private addClient(ws: WebSocket, userId: string) {

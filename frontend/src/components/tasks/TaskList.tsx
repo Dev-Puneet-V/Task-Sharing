@@ -8,6 +8,7 @@ import {
 import TaskCard from "./TaskCard";
 import CreateTaskModal from "./CreateTaskModal";
 import api from "../../utils/axios";
+import { useWebSocket } from "../../context/WebSocketContext";
 interface Task {
   _id: string;
   title: string;
@@ -31,6 +32,7 @@ interface Task {
 }
 
 export const TaskList: React.FC = () => {
+  const { ws, joinRoom, leaveRoom } = useWebSocket();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -53,7 +55,6 @@ export const TaskList: React.FC = () => {
   const [showSharedTasks, setShowSharedTasks] = useState(false);
   const [sharedTasks, setSharedTasks] = useState<Task[]>([]);
   const [sharedWithMeTasks, setSharedWithMeTasks] = useState<Task[]>([]);
-
   const fetchAllTasks = async () => {
     try {
       setLoading(true);
@@ -73,10 +74,10 @@ export const TaskList: React.FC = () => {
       setHasMore(myTasksData.hasMore);
 
       const { data: sharedWithMeData } = await api.get("/friends/shared-tasks");
-      setSharedWithMeTasks(sharedWithMeData.tasks);
+      setSharedWithMeTasks(sharedWithMeData.data);
 
       const { data: mySharedData } = await api.get("/friends/my-shared-tasks");
-      setSharedTasks(mySharedData.tasks);
+      setSharedTasks(mySharedData.data);
 
       setError("");
     } catch (err) {
@@ -90,6 +91,23 @@ export const TaskList: React.FC = () => {
   useEffect(() => {
     fetchAllTasks();
   }, [filters, sort, page]);
+
+  useEffect(() => {
+    tasks?.forEach((task: Task) => {
+      !showSharedTasks && joinRoom(task?._id, task)
+    });
+    sharedWithMeTasks?.forEach((task: Task) => {
+      showSharedTasks && joinRoom(task?._id, task)
+    });
+    return () => {
+      tasks?.forEach((task: Task) => {
+        !showSharedTasks && leaveRoom(task?._id);
+      });
+      sharedWithMeTasks?.forEach((task: Task) => {
+        showSharedTasks && leaveRoom(task?._id);
+      });
+    }
+  }, [tasks, showSharedTasks]);
 
   const handleCreateTask = async (
     taskData: Omit<

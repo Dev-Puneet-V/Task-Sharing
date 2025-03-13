@@ -24,14 +24,26 @@ router.post("/request", auth_1.auth, (req, res) => __awaiter(void 0, void 0, voi
     var _a;
     try {
         const result = yield friendService.sendFriendRequest((_a = req.user) === null || _a === void 0 ? void 0 : _a._id, req.body.email);
-        res.json(result);
+        res.json({
+            success: true,
+            message: "Friend request sent successfully",
+            data: result,
+        });
     }
     catch (error) {
         if (error.message === "User not found") {
-            res.status(404).json({ error: error.message });
+            res.status(404).json({
+                success: false,
+                message: "User not found",
+                error: error.message,
+            });
         }
         else {
-            res.status(400).json({ error: error.message });
+            res.status(400).json({
+                success: false,
+                message: "Failed to send friend request",
+                error: error.message,
+            });
         }
     }
 }));
@@ -40,14 +52,26 @@ router.patch("/request/:userId", auth_1.auth, (req, res) => __awaiter(void 0, vo
     var _a;
     try {
         const result = yield friendService.respondToFriendRequest((_a = req.user) === null || _a === void 0 ? void 0 : _a._id, req.params.userId, req.body.status);
-        res.json(result);
+        res.json({
+            success: true,
+            message: `Friend request ${req.body.status} successfully`,
+            data: result,
+        });
     }
     catch (error) {
         if (error.message === "Friend request not found") {
-            res.status(404).json({ error: error.message });
+            res.status(404).json({
+                success: false,
+                message: "Friend request not found",
+                error: error.message,
+            });
         }
         else {
-            res.status(400).json({ error: error.message });
+            res.status(400).json({
+                success: false,
+                message: "Failed to process friend request",
+                error: error.message,
+            });
         }
     }
 }));
@@ -56,14 +80,26 @@ router.get("/requests", auth_1.auth, (req, res) => __awaiter(void 0, void 0, voi
     var _a;
     try {
         const requests = yield friendService.getFriendRequests((_a = req.user) === null || _a === void 0 ? void 0 : _a._id);
-        res.json(requests);
+        res.json({
+            success: true,
+            message: "Friend requests retrieved successfully",
+            data: requests,
+        });
     }
     catch (error) {
         if (error.message === "User not found") {
-            res.status(404).json({ error: error.message });
+            res.status(404).json({
+                success: false,
+                message: "User not found",
+                error: error.message,
+            });
         }
         else {
-            res.status(500).json({ error: "Error fetching friend requests" });
+            res.status(500).json({
+                success: false,
+                message: "Failed to fetch friend requests",
+                error: error.message,
+            });
         }
     }
 }));
@@ -72,14 +108,26 @@ router.get("/", auth_1.auth, (req, res) => __awaiter(void 0, void 0, void 0, fun
     var _a;
     try {
         const friends = yield friendService.getFriendsList((_a = req.user) === null || _a === void 0 ? void 0 : _a._id);
-        res.json(friends);
+        res.json({
+            success: true,
+            message: "Friends list retrieved successfully",
+            data: friends,
+        });
     }
     catch (error) {
         if (error.message === "User not found") {
-            res.status(404).json({ error: error.message });
+            res.status(404).json({
+                success: false,
+                message: "User not found",
+                error: error.message,
+            });
         }
         else {
-            res.status(500).json({ error: "Error fetching friends list" });
+            res.status(500).json({
+                success: false,
+                message: "Failed to fetch friends list",
+                error: error.message,
+            });
         }
     }
 }));
@@ -90,8 +138,9 @@ router.get("/new", auth_1.auth, (req, res) => __awaiter(void 0, void 0, void 0, 
         const { query } = req.query;
         if (!query || typeof query !== "string") {
             return res.status(400).json({
-                error: "Invalid request",
-                details: "Please provide a search term (email or name)",
+                success: false,
+                message: "Invalid request",
+                error: "Please provide a search term (email or name)",
             });
         }
         const result = yield friendService.searchPotentialFriends((_a = req.user) === null || _a === void 0 ? void 0 : _a._id, {
@@ -100,17 +149,23 @@ router.get("/new", auth_1.auth, (req, res) => __awaiter(void 0, void 0, void 0, 
         });
         if (result.users.length === 0) {
             return res.status(404).json({
-                error: "No users found",
-                details: result.message,
+                success: false,
+                message: "No users found",
+                error: result.message,
             });
         }
-        res.json(result);
+        res.json({
+            success: true,
+            message: "Potential friends found successfully",
+            data: result,
+        });
     }
     catch (error) {
         console.error("Error finding potential friends:", error);
         res.status(500).json({
-            error: "Failed to find potential friends",
-            details: error instanceof Error ? error.message : "An unexpected error occurred",
+            success: false,
+            message: "Failed to find potential friends",
+            error: error instanceof Error ? error.message : "An unexpected error occurred",
         });
     }
 }));
@@ -119,13 +174,18 @@ router.get("/list", auth_1.auth, (req, res) => __awaiter(void 0, void 0, void 0,
     var _a;
     try {
         const result = yield friendService.getCurrentFriends((_a = req.user) === null || _a === void 0 ? void 0 : _a._id);
-        res.json(result);
+        res.json({
+            success: true,
+            message: "Current friends list retrieved successfully",
+            data: result,
+        });
     }
     catch (error) {
         console.error("Error fetching friends:", error);
         res.status(500).json({
-            error: "Failed to fetch friends",
-            details: error instanceof Error ? error.message : "An unexpected error occurred",
+            success: false,
+            message: "Failed to fetch friends",
+            error: error instanceof Error ? error.message : "An unexpected error occurred",
         });
     }
 }));
@@ -134,10 +194,18 @@ router.get("/shared-tasks", auth_1.auth, (req, res) => __awaiter(void 0, void 0,
     var _a;
     try {
         const tasks = yield taskService.getTasksSharedWithMe((_a = req.user) === null || _a === void 0 ? void 0 : _a._id);
-        res.json(tasks);
+        res.json({
+            success: true,
+            message: "Shared tasks retrieved successfully",
+            data: tasks,
+        });
     }
     catch (error) {
-        res.status(500).json({ error: "Error fetching shared tasks" });
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch shared tasks",
+            error: error.message,
+        });
     }
 }));
 // Get my tasks that I've shared with others
@@ -145,10 +213,18 @@ router.get("/my-shared-tasks", auth_1.auth, (req, res) => __awaiter(void 0, void
     var _a;
     try {
         const tasks = yield taskService.getMySharedTasks((_a = req.user) === null || _a === void 0 ? void 0 : _a._id);
-        res.json(tasks);
+        res.json({
+            success: true,
+            message: "My shared tasks retrieved successfully",
+            data: tasks,
+        });
     }
     catch (error) {
-        res.status(500).json({ error: "Error fetching shared tasks" });
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch shared tasks",
+            error: error.message,
+        });
     }
 }));
 // Unshare task with friends
@@ -157,14 +233,26 @@ router.delete("/unshare-task/:taskId", auth_1.auth, (req, res) => __awaiter(void
     try {
         const { friendIds } = req.body;
         const task = yield taskService.unshareTask(req.params.taskId, (_a = req.user) === null || _a === void 0 ? void 0 : _a._id, friendIds);
-        res.json({ message: "Task unshared successfully", task });
+        res.json({
+            success: true,
+            message: "Task unshared successfully",
+            data: task,
+        });
     }
     catch (error) {
         if (error.message === "Task not found") {
-            res.status(404).json({ error: error.message });
+            res.status(404).json({
+                success: false,
+                message: "Task not found",
+                error: error.message,
+            });
         }
         else {
-            res.status(400).json({ error: "Error unsharing task" });
+            res.status(400).json({
+                success: false,
+                message: "Failed to unshare task",
+                error: error.message,
+            });
         }
     }
 }));
@@ -173,14 +261,26 @@ router.delete("/:friendId", auth_1.auth, (req, res) => __awaiter(void 0, void 0,
     var _a;
     try {
         const result = yield friendService.removeFriend((_a = req.user) === null || _a === void 0 ? void 0 : _a._id, req.params.friendId);
-        res.json(result);
+        res.json({
+            success: true,
+            message: "Friend removed successfully",
+            data: result,
+        });
     }
     catch (error) {
         if (error.message === "Friend not found") {
-            res.status(404).json({ error: error.message });
+            res.status(404).json({
+                success: false,
+                message: "Friend not found",
+                error: error.message,
+            });
         }
         else {
-            res.status(400).json({ error: "Error removing friend" });
+            res.status(400).json({
+                success: false,
+                message: "Failed to remove friend",
+                error: error.message,
+            });
         }
     }
 }));
@@ -190,18 +290,34 @@ router.post("/share-task/:taskId", auth_1.auth, (req, res) => __awaiter(void 0, 
     try {
         const { friendIds } = req.body;
         const task = yield taskService.shareTaskWithMultiple(req.params.taskId, (_a = req.user) === null || _a === void 0 ? void 0 : _a._id, friendIds);
-        res.json({ message: "Task unshared successfully", task });
+        res.json({
+            success: true,
+            message: "Task shared successfully",
+            data: task,
+        });
     }
     catch (error) {
         if (error.message === "Task not found") {
-            res.status(404).json({ error: error.message });
+            res.status(404).json({
+                success: false,
+                message: "Task not found",
+                error: error.message,
+            });
         }
         else if (error.message === "Task already shared with this user") {
-            res.status(400).json({ error: error.message });
+            res.status(400).json({
+                success: false,
+                message: "Task already shared with this user",
+                error: error.message,
+            });
         }
         else {
             console.error("Error sharing task:", error);
-            res.status(400).json({ error: "Error sharing task" });
+            res.status(400).json({
+                success: false,
+                message: "Failed to share task",
+                error: error.message,
+            });
         }
     }
 }));

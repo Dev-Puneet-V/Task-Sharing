@@ -6,6 +6,8 @@ const WEBSOCKET_URL = "ws://localhost:5001";
 
 interface WebSocketContextType {
   ws: WebSocket | null;
+  joinRoom: (roomId: string, data: unknown) => void;
+  leaveRoom: (roomId: string) => void;
   // isConnected: boolean;
   // error: string | null;
   // connect: () => void;
@@ -22,14 +24,55 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
   const [ws, setWs] = useState<WebSocket | null>(null);
 
   useEffect(() => {
-    const socket = new WebSocket(WEBSOCKET_URL);
-    setWs(socket);
+    try {
+      const socket = new WebSocket(WEBSOCKET_URL);
+      setWs(socket);
+    } catch (error: unknown) {
+      console.error("Connection to real time communication failed");
+    }
   }, []);
+
+  useEffect(() => {
+    if (!ws) return;
+    ws.onopen = () => {
+      console.log("Established real time communication");
+    };
+    ws.onclose = () => {
+      console.log("Unestablished real time communication");
+    };
+    ws.onerror = () => {
+      console.error("Something went wrong in real time communication");
+    };
+  }, [ws]);
+
+  const joinRoom = (roomId: string, data: unknown) => {
+    if (!roomId.trim()) return;
+    const info = JSON.stringify({
+      type: "JOIN_ROOM",
+      payload: {
+        roomId,
+        data,
+      },
+    });
+    ws?.send(info);
+  };
+
+  const leaveRoom = (roomId: string) => {
+    if (!roomId.trim()) return;
+    const info = JSON.stringify({
+      type: "LEAVE_ROOM",
+      payload: {
+        roomId
+      }
+    });
+    ws?.send(info);
+  };
+
   return (
-    <webSocketContext.Provider value={{ws}}>
+    <webSocketContext.Provider value={{ ws, joinRoom, leaveRoom }}>
       {children}
     </webSocketContext.Provider>
-  )
+  );
 };
 
 export const useWebSocket = () => {
@@ -39,6 +82,5 @@ export const useWebSocket = () => {
   }
   return context;
 };
-
 
 export default webSocketContext;
