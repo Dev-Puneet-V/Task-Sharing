@@ -32,20 +32,70 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const ws_1 = __importStar(require("ws"));
-const dotenv_1 = __importDefault(require("dotenv"));
-dotenv_1.default.config();
+const config_1 = __importDefault(require("../../config"));
+const auth_1 = require("../../utils/auth");
+const helpers_1 = require("../../utils/helpers");
 // Follows singleton pattern
 class WebSocketService {
     constructor() {
-        const port = parseInt(process.env.WEBSOCKET_PORT || "5001");
-        this.wss = new ws_1.WebSocketServer({ port });
-        this.clients = new Set();
-        console.log(`WebSocket server starting on port ${port}`);
+        this.clients = new Map();
+        this.wss = new ws_1.WebSocketServer({
+            port: config_1.default.wsPort,
+            verifyClient: (info, cb) => __awaiter(this, void 0, void 0, function* () {
+                try {
+                    // Origin verification
+                    const originValid = yield this.verifyOrigin(info.origin);
+                    if (!originValid) {
+                        cb(false, 403, "Origin not allowed");
+                        return;
+                    }
+                    // Authentication
+                    const userId = yield this.authenticateClient(info.req.headers.cookie);
+                    if (!userId) {
+                        cb(false, 401, "Unauthorized");
+                        return;
+                    }
+                    // Attach userId to request for later use
+                    info.req.userId = userId;
+                    // cb(true);
+                }
+                catch (error) {
+                    console.error("WebSocket verification error:", error);
+                    cb(false, 500, "Internal server error");
+                }
+            }),
+        }, () => {
+            console.log(`WebSocket server starting on port ${config_1.default.wsPort}`);
+        });
+    }
+    verifyOrigin(origin) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return config_1.default.allowedOrigins.includes(origin);
+        });
+    }
+    authenticateClient(cookieHeader) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!cookieHeader)
+                return null;
+            const parsedCookie = (0, helpers_1.cookieParse)(cookieHeader);
+            if (!(parsedCookie === null || parsedCookie === void 0 ? void 0 : parsedCookie.token))
+                return null;
+            return yield (0, auth_1.verifyToken)(parsedCookie.token);
+        });
     }
     static getInstance() {
         if (!WebSocketService.instance) {
@@ -58,23 +108,23 @@ class WebSocketService {
     }
     connect() {
         this.wss.on("listening", () => {
-            console.log(`WebSocket server is listening on port ${process.env.WEBSOCKET_PORT || 5001}`);
+            console.log(`WebSocket server is listening on port ${config_1.default.wsPort}`);
         });
-        this.wss.on("connection", (ws) => {
-            console.log("New client connected");
-            this.clients.add(ws);
+        this.wss.on("connection", (ws, request) => {
+            const userId = request.userId;
+            console.log(`New client connected: ${userId}`);
+            this.addClient(ws, userId);
             ws.on("error", (error) => {
                 console.error("WebSocket error:", error);
             });
             ws.on("close", () => {
-                console.log("Client disconnected");
-                this.clients.delete(ws);
+                console.log(`Client disconnected: ${userId}`);
+                this.removeClient(userId);
             });
             ws.on("message", (data) => {
                 try {
                     const message = JSON.parse(data.toString());
-                    console.log("Received message:", message);
-                    // Handle different message types here
+                    this.handleMessage(userId, message);
                 }
                 catch (error) {
                     console.error("Error parsing message:", error);
@@ -85,14 +135,42 @@ class WebSocketService {
             console.error("WebSocket server error:", error);
         });
     }
-    // Method to broadcast a message to all connected clients
-    broadcast(message) {
-        const messageStr = JSON.stringify(message);
-        this.clients.forEach((client) => {
-            if (client.readyState === ws_1.default.OPEN) {
-                client.send(messageStr);
+    handleMessage(userId, message) {
+        const client = this.clients.get(userId);
+        if (!client) {
+            console.error(`No client found for userId: ${userId}`);
+            return;
+        }
+        switch (message.type) {
+            case "JOIN_TASK":
+                client.activeRooms.add(message.payload.taskId);
+                break;
+            case "LEAVE_TASK":
+                client.activeRooms.delete(message.payload.taskId);
+                break;
+            default:
+                console.log(`Unhandled message type: ${message.type}`);
+        }
+    }
+    addClient(ws, userId) {
+        const client = {
+            ws,
+            userId,
+            connectedAt: new Date(),
+            activeRooms: new Set(),
+        };
+        this.clients.set(userId, client);
+    }
+    removeClient(userId) {
+        this.clients.delete(userId);
+    }
+    broadcastToTask(taskId, message) {
+        for (const [userId, client] of this.clients) {
+            if (client.activeRooms.has(taskId) &&
+                client.ws.readyState === ws_1.default.OPEN) {
+                client.ws.send(JSON.stringify(message));
             }
-        });
+        }
     }
 }
 /* we are not exporting directly WebSocketService because we want to follow singleton pattern

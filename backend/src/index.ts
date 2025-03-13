@@ -8,18 +8,14 @@ import taskRoutes from "./routes/tasks";
 import friendRoutes from "./routes/friends";
 import userRoutes from "./routes/users";
 import WebSocketService from "./services/websocket/WebSocketService";
+import config from "./config";
+
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173", // Vite's default port
-    credentials: true, // Important for cookies
-  })
-);
+app.use(cors(config.corsOptions));
 app.use(cookieParser());
 app.use(express.json());
 app.use((req, res, next) => {
@@ -53,13 +49,13 @@ app.use("/api/users", userRoutes);
 
 // Initialize WebSocket after database connection
 mongoose
-  .connect(process.env.MONGODB_URI || "mongodb://localhost:27017/task-tracker")
+  .connect(config.mongoUri)
   .then(() => {
     console.log("Connected to MongoDB");
 
     // Start Express server
-    app.listen(PORT, () => {
-      console.log(`Express server is running on port ${PORT}`);
+    app.listen(config.port, () => {
+      console.log(`Express server is running on port ${config.port}`);
 
       // Initialize WebSocket server
       try {

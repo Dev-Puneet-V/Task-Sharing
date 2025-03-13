@@ -148,7 +148,9 @@ export const TaskList: React.FC = () => {
       );
       console.log("Updated task:", updatedTask, taskId);
       setTasks((prevTasks = []) =>
-        prevTasks.map((task) => (task._id === taskId ? updatedTask?.task : task))
+        prevTasks.map((task) =>
+          task._id === taskId ? updatedTask?.task : task
+        )
       );
       setSharedTasks((prevTasks = []) => [...prevTasks, updatedTask]);
     } catch (err: any) {
@@ -166,7 +168,9 @@ export const TaskList: React.FC = () => {
         }
       );
       setTasks((prevTasks = []) =>
-        prevTasks.map((task) => (task._id === taskId ? updatedTask?.task : task))
+        prevTasks.map((task) =>
+          task._id === taskId ? updatedTask?.task : task
+        )
       );
       if (updatedTask?.task?.sharedWith.length === 0) {
         setSharedTasks((prevTasks = []) =>
@@ -182,129 +186,134 @@ export const TaskList: React.FC = () => {
   const displayedTasks = showSharedTasks ? sharedWithMeTasks : tasks;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Tasks</h1>
-          <div className="mt-2">
-            <button
-              onClick={() => setShowSharedTasks(false)}
-              className={`mr-4 ${
-                !showSharedTasks
-                  ? "text-blue-600 font-semibold"
-                  : "text-gray-600"
-              }`}
+    <div className="h-screen flex flex-col">
+      <div className="container mx-auto px-4 py-8 flex flex-col h-full">
+        {/* Header - Fixed */}
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-2xl font-bold">Tasks</h1>
+            <div className="mt-2">
+              <button
+                onClick={() => setShowSharedTasks(false)}
+                className={`mr-4 ${
+                  !showSharedTasks
+                    ? "text-blue-600 font-semibold"
+                    : "text-gray-600"
+                }`}
+              >
+                My Tasks ({tasks ? tasks?.length : 0})
+              </button>
+              <button
+                onClick={() => setShowSharedTasks(true)}
+                className={`${
+                  showSharedTasks
+                    ? "text-blue-600 font-semibold"
+                    : "text-gray-600"
+                }`}
+              >
+                Shared with Me (
+                {sharedWithMeTasks ? sharedWithMeTasks?.length : 0})
+              </button>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            <PlusIcon className="h-5 w-5 mr-2" />
+            New Task
+          </button>
+        </div>
+
+        {/* Filters - Fixed */}
+        <div className="bg-white p-4 rounded-lg shadow mb-6">
+          <div className="flex flex-wrap gap-4">
+            <select
+              value={filters.status}
+              onChange={(e) =>
+                setFilters((prev) => ({ ...prev, status: e.target.value }))
+              }
+              className="border rounded-md px-3 py-2"
             >
-              My Tasks ({tasks ? tasks?.length : 0})
-            </button>
-            <button
-              onClick={() => setShowSharedTasks(true)}
-              className={`${
-                showSharedTasks
-                  ? "text-blue-600 font-semibold"
-                  : "text-gray-600"
-              }`}
+              <option value="">All Status</option>
+              <option value="pending">To Do</option>
+              <option value="in_progress">In Progress</option>
+              <option value="completed">Completed</option>
+            </select>
+
+            <select
+              value={filters.priority}
+              onChange={(e) =>
+                setFilters((prev) => ({ ...prev, priority: e.target.value }))
+              }
+              className="border rounded-md px-3 py-2"
             >
-              Shared with Me ({sharedWithMeTasks ? sharedWithMeTasks?.length : 0})
-            </button>
+              <option value="">All Priority</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+
+            <input
+              type="text"
+              placeholder="Search tasks..."
+              value={filters.search}
+              onChange={(e) =>
+                setFilters((prev) => ({ ...prev, search: e.target.value }))
+              }
+              className="border rounded-md px-3 py-2 flex-grow"
+            />
           </div>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          <PlusIcon className="h-5 w-5 mr-2" />
-          New Task
-        </button>
-      </div>
 
-      {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <div className="flex flex-wrap gap-4">
-          <select
-            value={filters.status}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, status: e.target.value }))
-            }
-            className="border rounded-md px-3 py-2"
-          >
-            <option value="">All Status</option>
-            <option value="pending">To Do</option>
-            <option value="in_progress">In Progress</option>
-            <option value="completed">Completed</option>
-          </select>
-
-          <select
-            value={filters.priority}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, priority: e.target.value }))
-            }
-            className="border rounded-md px-3 py-2"
-          >
-            <option value="">All Priority</option>
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-          </select>
-
-          <input
-            type="text"
-            placeholder="Search tasks..."
-            value={filters.search}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, search: e.target.value }))
-            }
-            className="border rounded-md px-3 py-2 flex-grow"
-          />
+        {/* Tasks List - Scrollable */}
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {loading ? (
+            <div className="text-center py-8">Loading...</div>
+          ) : error ? (
+            <div className="text-center py-8 text-red-600">{error}</div>
+          ) : displayedTasks?.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              {showSharedTasks ? "No tasks shared with you" : "No tasks found"}
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 auto-rows-min">
+              {displayedTasks?.map((task) => (
+                <TaskCard
+                  key={task?._id}
+                  task={task}
+                  onUpdate={handleUpdateTask}
+                  onDelete={handleDeleteTask}
+                  onShare={handleShareTask}
+                  onUnshare={handleUnshareTask}
+                />
+              ))}
+            </div>
+          )}
         </div>
-      </div>
 
-      {/* Task List */}
-      {loading ? (
-        <div className="text-center py-8">Loading...</div>
-      ) : error ? (
-        <div className="text-center py-8 text-red-600">{error}</div>
-      ) : displayedTasks?.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
-          {showSharedTasks ? "No tasks shared with you" : "No tasks found"}
-        </div>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {displayedTasks?.map((task) => (
-            <TaskCard
-              key={task?._id}
-              task={task}
-              onUpdate={handleUpdateTask}
-              onDelete={handleDeleteTask}
-              onShare={handleShareTask}
-              onUnshare={handleUnshareTask}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Pagination */}
-      <div className="mt-6 flex justify-between items-center">
-        <div className="text-sm text-gray-600">
-          Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)} of{" "}
-          {total} tasks
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="px-4 py-2 border rounded-md disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <button
-            onClick={() => setPage((p) => p + 1)}
-            disabled={!hasMore}
-            className="px-4 py-2 border rounded-md disabled:opacity-50"
-          >
-            Next
-          </button>
+        {/* Pagination - Fixed */}
+        <div className="mt-6 flex justify-between items-center">
+          <div className="text-sm text-gray-600">
+            Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)}{" "}
+            of {total} tasks
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-4 py-2 border rounded-md disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setPage((p) => p + 1)}
+              disabled={!hasMore}
+              className="px-4 py-2 border rounded-md disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
 
