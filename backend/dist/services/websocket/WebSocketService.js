@@ -136,7 +136,7 @@ class WebSocketService {
         });
     }
     handleMessage(userId, message) {
-        var _a, _b, _c, _d, _e;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
         const client = this.clients.get(userId);
         if (!client) {
             console.error(`No client found for userId: ${userId}`);
@@ -161,6 +161,23 @@ class WebSocketService {
                         payload: message.payload.updates,
                     });
                 }
+                else if (((_f = message === null || message === void 0 ? void 0 : message.payload) === null || _f === void 0 ? void 0 : _f.updateType) === "UNSHARE_TASK" &&
+                    ((_h = (_g = message === null || message === void 0 ? void 0 : message.payload) === null || _g === void 0 ? void 0 : _g.updates) === null || _h === void 0 ? void 0 : _h._id)) {
+                    this.broadcastToTask(message.payload.updates._id, {
+                        type: "UNSHARE_TASK",
+                        payload: message.payload.updates,
+                    });
+                    this.removeFromClient(userId, message.payload.updates._id);
+                }
+                else if (((_j = message === null || message === void 0 ? void 0 : message.payload) === null || _j === void 0 ? void 0 : _j.updateType) === "SHARE_TASK" &&
+                    ((_l = (_k = message === null || message === void 0 ? void 0 : message.payload) === null || _k === void 0 ? void 0 : _k.updates) === null || _l === void 0 ? void 0 : _l._id)) {
+                    console.log("TASK FJFJ", message.payload);
+                    this.addToClient(userId, message.payload.updates._id);
+                    this.broadcastToTask(message.payload.updates._id, {
+                        type: "SHARE_TASK",
+                        payload: message.payload.updates,
+                    });
+                }
                 break;
             default:
                 console.log(`Unhandled message type: ${message.type}`);
@@ -177,6 +194,18 @@ class WebSocketService {
     }
     removeClient(userId) {
         this.clients.delete(userId);
+    }
+    removeFromClient(userId, roomId) {
+        const client = this.clients.get(userId);
+        if (client) {
+            client.activeRooms.delete(roomId);
+        }
+    }
+    addToClient(userId, roomId) {
+        const client = this.clients.get(userId);
+        if (client) {
+            client.activeRooms.add(roomId);
+        }
     }
     broadcastToTask(taskId, message) {
         for (const [userId, client] of this.clients) {

@@ -41,7 +41,7 @@ interface TaskCardProps {
   task: Task;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<void>;
   onDelete: (taskId: string) => Promise<void>;
-  onShare: (taskId: string, friendIds: string[]) => Promise<void>;
+  onShare: (taskId: string, friendIds: string[]) => Promise<{ data: any }>;
   onUnshare: (taskId: string, friendIds: string[]) => Promise<void>;
 }
 
@@ -130,6 +130,10 @@ const TaskCard: React.FC<TaskCardProps> = ({
   const handleStatusChange = async (newStatus: Task["status"]) => {
     try {
       await onUpdate(task?._id, { status: newStatus });
+      updateRoom(task?._id, "TASK_UPDATE", {
+        ...task,
+        status: newStatus,
+      });
     } catch (error) {
       console.error("Error updating task status:", error);
     }

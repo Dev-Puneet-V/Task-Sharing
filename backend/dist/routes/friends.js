@@ -228,7 +228,7 @@ router.get("/my-shared-tasks", auth_1.auth, (req, res) => __awaiter(void 0, void
     }
 }));
 // Unshare task with friends
-router.delete("/unshare-task/:taskId", auth_1.auth, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.delete("/share-task/:taskId", auth_1.auth, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
         const { friendIds } = req.body;

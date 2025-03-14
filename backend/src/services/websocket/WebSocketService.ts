@@ -147,6 +147,24 @@ class WebSocketService {
             type: "TASK_UPDATE",
             payload: message.payload.updates,
           });
+        } else if (
+          message?.payload?.updateType === "UNSHARE_TASK" &&
+          message?.payload?.updates?._id
+        ) {
+          this.broadcastToTask(message.payload.updates._id, {
+            type: "UNSHARE_TASK",
+            payload: message.payload.updates,
+          });
+          this.removeFromClient(userId, message.payload.updates._id);
+        } else if (
+          message?.payload?.updateType === "SHARE_TASK" &&
+          message?.payload?.updates?._id
+        ) {
+          this.addToClient(userId, message.payload.updates._id);
+          this.broadcastToTask(message.payload.updates._id, {
+            type: "SHARE_TASK",
+            payload: message.payload.updates,
+          });
         }
         break;
       default:
@@ -166,6 +184,20 @@ class WebSocketService {
 
   private removeClient(userId: string) {
     this.clients.delete(userId);
+  }
+
+  private removeFromClient(userId: string, roomId: string) {
+    const client = this.clients.get(userId);
+    if (client) {
+      client.activeRooms.delete(roomId);
+    }
+  }
+
+  private addToClient(userId: string, roomId: string) {
+    const client = this.clients.get(userId);
+    if (client) {
+      client.activeRooms.add(roomId);
+    }
   }
 
   public broadcastToTask(taskId: string, message: any) {

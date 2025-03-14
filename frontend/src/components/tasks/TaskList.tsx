@@ -76,9 +76,7 @@ export const TaskList: React.FC = () => {
 
       const { data: sharedWithMeData } = await api.get("/friends/shared-tasks");
       setSharedWithMeTasks(sharedWithMeData.data);
-      setTaskInCurrentView(
-        [...sharedWithMeData.data, ...myTasksData.tasks]
-      );
+      setTaskInCurrentView([...sharedWithMeData.data, ...myTasksData.tasks]);
       const { data: mySharedData } = await api.get("/friends/my-shared-tasks");
       setSharedTasks(mySharedData.data);
 
@@ -105,7 +103,7 @@ export const TaskList: React.FC = () => {
       });
     };
   }, [taskInCurrentView]);
-  
+
   useEffect(() => {
     if (!ws) return;
 
@@ -124,6 +122,15 @@ export const TaskList: React.FC = () => {
               task._id === updatedTask._id ? updatedTask : task
             )
           );
+        } else if (message.type === "UNSHARE_TASK") {
+          const updatedTask = message.payload;
+          setSharedWithMeTasks((prevTasks) =>
+            prevTasks.filter((task) => task._id !== updatedTask._id)
+          );
+        } else if (message.type === "SHARE_TASK") {
+          const newSharedTask = message.payload;
+          console.log(newSharedTask);
+          setSharedWithMeTasks([...sharedWithMeTasks, newSharedTask]);
         }
       } catch (error) {
         console.error("Error handling WebSocket message:", error);
@@ -192,33 +199,35 @@ export const TaskList: React.FC = () => {
           friendIds,
         }
       );
-      console.log("Updated task:", updatedTask, taskId);
       setTasks((prevTasks = []) =>
         prevTasks.map((task) =>
-          task._id === taskId ? updatedTask?.task : task
+          task._id === taskId ? updatedTask?.data : task
         )
       );
-      setSharedTasks((prevTasks = []) => [...prevTasks, updatedTask]);
+      setSharedTasks((prevTasks = []) => [...prevTasks, updatedTask.data]);
+      return { data: updatedTask.data };
     } catch (err: any) {
       console.error("Error sharing task:", err);
       setError(err.response?.data?.error || "Error sharing task");
+      throw err;
     }
   };
 
   const handleUnshareTask = async (taskId: string, friendIds: string[]) => {
     try {
       const { data: updatedTask } = await api.delete(
-        `/friends/unshare-task/${taskId}`,
+        `/friends/share-task/${taskId}`,
         {
           data: { friendIds },
         }
       );
+      console.log(updatedTask?.data);
       setTasks((prevTasks = []) =>
         prevTasks.map((task) =>
-          task._id === taskId ? updatedTask?.task : task
+          task._id === taskId ? updatedTask?.data : task
         )
       );
-      if (updatedTask?.task?.sharedWith.length === 0) {
+      if (updatedTask?.data?.sharedWith.length === 0) {
         setSharedTasks((prevTasks = []) =>
           prevTasks?.filter((task) => task._id !== taskId)
         );

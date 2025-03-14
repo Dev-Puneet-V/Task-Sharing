@@ -10,8 +10,8 @@ interface WebSocketContextType {
   leaveRoom: (roomId: string) => void;
   updateRoom: (
     roomId: string,
-    updateType: "TASK_UPDATE",
-    updates: unknown
+    updateType: "TASK_UPDATE" | "UNSHARE_TASK" | "SHARE_TASK",
+    updates?: unknown
   ) => void;
   // isConnected: boolean;
   // error: string | null;
@@ -75,8 +75,8 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const updateRoom = (
     roomId: string,
-    updateType: "TASK_UPDATE",
-    updates: unknown
+    updateType: "TASK_UPDATE" | "UNSHARE_TASK" | "SHARE_TASK",
+    updates?: unknown
   ) => {
     if (!roomId.trim()) return;
     const info = JSON.stringify({
