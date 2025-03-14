@@ -7,8 +7,8 @@ import { useEffect, useRef } from "react";
  *
  */
 
-const usePreviousValue = (value: unknown) => {
-  const previousValue = useRef<unknown>(undefined);
+const usePreviousValue = (value: any) => {
+  const previousValue = useRef<any>(undefined);
   useEffect(() => {
     previousValue.current = value;
   });

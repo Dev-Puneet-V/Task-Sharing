@@ -35,7 +35,7 @@ const ShareTaskModal: React.FC<ShareTaskModalProps> = ({
       try {
         setLoading(true);
         const response = await api.get("/friends");
-        setFriends(response.data);
+        setFriends(response.data?.data);
         setError("");
       } catch (err) {
         console.error("Error fetching friends:", err);

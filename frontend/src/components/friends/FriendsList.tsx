@@ -35,8 +35,8 @@ const FriendsList: React.FC = () => {
         api.get("/friends"),
         api.get("/friends/requests"),
       ]);
-      setFriends(friendsRes.data);
-      setFriendRequests(requestsRes.data);
+      setFriends(friendsRes.data.data);
+      setFriendRequests(requestsRes.data.data);
       setError("");
     } catch (err) {
       console.error("Error fetching friends data:", err);
@@ -102,7 +102,7 @@ const FriendsList: React.FC = () => {
       const { data } = await api.get(
         `/friends/new?query=${encodeURIComponent(query)}`
       );
-      setSearchResults(data.users);
+      setSearchResults(data.data);
       setError("");
     } catch (err: any) {
       setError(err.response?.data?.error || "Failed to search users");
@@ -184,11 +184,11 @@ const FriendsList: React.FC = () => {
       )}
 
       {/* Friend Requests Section */}
-      {friendRequests.length > 0 && (
+      {friendRequests?.length > 0 && (
         <div className="bg-white p-4 rounded-lg shadow mb-6">
           <h2 className="text-lg font-semibold mb-4">Friend Requests</h2>
           <div className="space-y-3">
-            {friendRequests.map((request) => (
+            {friendRequests?.map((request) => (
               <div
                 key={request.from._id}
                 className="flex items-center justify-between p-3 bg-gray-50 rounded"
@@ -228,11 +228,11 @@ const FriendsList: React.FC = () => {
         <h2 className="text-lg font-semibold mb-4">My Friends</h2>
         {loading ? (
           <div className="text-center py-4">Loading...</div>
-        ) : friends.length === 0 ? (
+        ) : friends?.length === 0 ? (
           <div className="text-center py-4 text-gray-500">No friends yet</div>
         ) : (
           <div className="space-y-3">
-            {friends.map((friend) => (
+            {friends?.map((friend) => (
               <div
                 key={friend._id}
                 className="flex items-center justify-between p-3 bg-gray-50 rounded"

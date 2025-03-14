@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import api from "../../utils/axios";
 import ShareTaskModal from "./ShareTaskModal";
 import { useAuth } from "../../context/AuthContext";
+import { useWebSocket } from "../../context/WebSocketContext";
 
 interface Friend {
   _id: string;
@@ -65,6 +66,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
   onShare,
   onUnshare,
 }) => {
+  const { updateRoom } = useWebSocket();
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(task?.title);
   const [editedDescription, setEditedDescription] = useState(task?.description);
@@ -96,6 +98,11 @@ const TaskCard: React.FC<TaskCardProps> = ({
     if (!isOwner) return; // Only owner can update title/description
     try {
       await onUpdate(task?._id, {
+        title: editedTitle,
+        description: editedDescription,
+      });
+      updateRoom(task?._id, "TASK_UPDATE", {
+        ...task,
         title: editedTitle,
         description: editedDescription,
       });

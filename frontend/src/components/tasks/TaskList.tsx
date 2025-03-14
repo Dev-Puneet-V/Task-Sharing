@@ -32,7 +32,7 @@ interface Task {
 }
 
 export const TaskList: React.FC = () => {
-  const { ws, joinRoom, leaveRoom } = useWebSocket();
+  const { joinRoom, leaveRoom, ws } = useWebSocket();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -55,6 +55,7 @@ export const TaskList: React.FC = () => {
   const [showSharedTasks, setShowSharedTasks] = useState(false);
   const [sharedTasks, setSharedTasks] = useState<Task[]>([]);
   const [sharedWithMeTasks, setSharedWithMeTasks] = useState<Task[]>([]);
+  const [taskInCurrentView, setTaskInCurrentView] = useState<Task[]>([]);
   const fetchAllTasks = async () => {
     try {
       setLoading(true);
@@ -75,7 +76,9 @@ export const TaskList: React.FC = () => {
 
       const { data: sharedWithMeData } = await api.get("/friends/shared-tasks");
       setSharedWithMeTasks(sharedWithMeData.data);
-
+      setTaskInCurrentView(
+        [...sharedWithMeData.data, ...myTasksData.tasks]
+      );
       const { data: mySharedData } = await api.get("/friends/my-shared-tasks");
       setSharedTasks(mySharedData.data);
 
@@ -93,21 +96,46 @@ export const TaskList: React.FC = () => {
   }, [filters, sort, page]);
 
   useEffect(() => {
-    tasks?.forEach((task: Task) => {
-      !showSharedTasks && joinRoom(task?._id, task)
-    });
-    sharedWithMeTasks?.forEach((task: Task) => {
-      showSharedTasks && joinRoom(task?._id, task)
+    taskInCurrentView?.forEach((task: Task) => {
+      joinRoom(task?._id, task);
     });
     return () => {
-      tasks?.forEach((task: Task) => {
-        !showSharedTasks && leaveRoom(task?._id);
+      taskInCurrentView?.forEach((task: Task) => {
+        leaveRoom(task?._id);
       });
-      sharedWithMeTasks?.forEach((task: Task) => {
-        showSharedTasks && leaveRoom(task?._id);
-      });
-    }
-  }, [tasks, showSharedTasks]);
+    };
+  }, [taskInCurrentView]);
+  
+  useEffect(() => {
+    if (!ws) return;
+
+    ws.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        if (message.type === "TASK_UPDATE") {
+          const updatedTask = message.payload;
+          setTasks((prevTasks) =>
+            prevTasks.map((task) =>
+              task._id === updatedTask._id ? updatedTask : task
+            )
+          );
+          setSharedWithMeTasks((prevTasks) =>
+            prevTasks.map((task) =>
+              task._id === updatedTask._id ? updatedTask : task
+            )
+          );
+        }
+      } catch (error) {
+        console.error("Error handling WebSocket message:", error);
+      }
+    };
+
+    return () => {
+      if (ws) {
+        ws.onmessage = null;
+      }
+    };
+  }, [ws]);
 
   const handleCreateTask = async (
     taskData: Omit<

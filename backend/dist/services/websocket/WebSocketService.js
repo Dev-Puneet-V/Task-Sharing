@@ -136,23 +136,35 @@ class WebSocketService {
         });
     }
     handleMessage(userId, message) {
+        var _a, _b, _c, _d, _e;
         const client = this.clients.get(userId);
         if (!client) {
             console.error(`No client found for userId: ${userId}`);
             return;
         }
-        console.log(message);
         switch (message.type) {
             case "JOIN_ROOM":
-                client.activeRooms.add(message.payload.roomId);
+                if ((_a = message === null || message === void 0 ? void 0 : message.payload) === null || _a === void 0 ? void 0 : _a.roomId) {
+                    client.activeRooms.add(message.payload.roomId);
+                }
                 break;
             case "LEAVE_ROOM":
-                client.activeRooms.delete(message.payload.roomId);
+                if ((_b = message === null || message === void 0 ? void 0 : message.payload) === null || _b === void 0 ? void 0 : _b.roomId) {
+                    client.activeRooms.delete(message.payload.roomId);
+                }
+                break;
+            case "UPDATE_ROOM":
+                if (((_c = message === null || message === void 0 ? void 0 : message.payload) === null || _c === void 0 ? void 0 : _c.updateType) === "TASK_UPDATE" &&
+                    ((_e = (_d = message === null || message === void 0 ? void 0 : message.payload) === null || _d === void 0 ? void 0 : _d.updates) === null || _e === void 0 ? void 0 : _e._id)) {
+                    this.broadcastToTask(message.payload.updates._id, {
+                        type: "TASK_UPDATE",
+                        payload: message.payload.updates,
+                    });
+                }
                 break;
             default:
                 console.log(`Unhandled message type: ${message.type}`);
         }
-        console.log(client);
     }
     addClient(ws, userId) {
         const client = {

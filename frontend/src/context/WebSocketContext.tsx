@@ -8,6 +8,11 @@ interface WebSocketContextType {
   ws: WebSocket | null;
   joinRoom: (roomId: string, data: unknown) => void;
   leaveRoom: (roomId: string) => void;
+  updateRoom: (
+    roomId: string,
+    updateType: "TASK_UPDATE",
+    updates: unknown
+  ) => void;
   // isConnected: boolean;
   // error: string | null;
   // connect: () => void;
@@ -62,14 +67,30 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
     const info = JSON.stringify({
       type: "LEAVE_ROOM",
       payload: {
-        roomId
-      }
+        roomId,
+      },
+    });
+    ws?.send(info);
+  };
+
+  const updateRoom = (
+    roomId: string,
+    updateType: "TASK_UPDATE",
+    updates: unknown
+  ) => {
+    if (!roomId.trim()) return;
+    const info = JSON.stringify({
+      type: "UPDATE_ROOM",
+      payload: {
+        updateType,
+        updates,
+      },
     });
     ws?.send(info);
   };
 
   return (
-    <webSocketContext.Provider value={{ ws, joinRoom, leaveRoom }}>
+    <webSocketContext.Provider value={{ ws, joinRoom, leaveRoom, updateRoom }}>
       {children}
     </webSocketContext.Provider>
   );

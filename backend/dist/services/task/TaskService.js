@@ -84,7 +84,7 @@ class TaskService {
                 throw new Error("Task not found");
             }
             // Only owner can update certain fields
-            if (task.owner.toString() !== userId) {
+            if (task.owner.toString() !== userId.toString()) {
                 const allowedUpdates = ["status"];
                 const updateFields = Object.keys(updates);
                 const isValidOperation = updateFields.every((update) => allowedUpdates.includes(update));

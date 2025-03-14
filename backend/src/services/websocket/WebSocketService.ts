@@ -129,15 +129,29 @@ class WebSocketService {
 
     switch (message.type) {
       case "JOIN_ROOM":
-        client.activeRooms.add(message.payload.roomId);
+        if (message?.payload?.roomId) {
+          client.activeRooms.add(message.payload.roomId);
+        }
         break;
       case "LEAVE_ROOM":
-        client.activeRooms.delete(message.payload.roomId);
+        if (message?.payload?.roomId) {
+          client.activeRooms.delete(message.payload.roomId);
+        }
+        break;
+      case "UPDATE_ROOM":
+        if (
+          message?.payload?.updateType === "TASK_UPDATE" &&
+          message?.payload?.updates?._id
+        ) {
+          this.broadcastToTask(message.payload.updates._id, {
+            type: "TASK_UPDATE",
+            payload: message.payload.updates,
+          });
+        }
         break;
       default:
         console.log(`Unhandled message type: ${message.type}`);
     }
-    console.log(client);
   }
 
   private addClient(ws: WebSocket, userId: string) {
