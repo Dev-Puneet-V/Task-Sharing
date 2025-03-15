@@ -71,6 +71,7 @@ router.patch("/:id", auth_1.auth, (req, res) => __awaiter(void 0, void 0, void 0
         res.json(task);
     }
     catch (error) {
+        console.log(error);
         if (error.message === "Task not found") {
             res.status(404).json({ error: error.message });
         }

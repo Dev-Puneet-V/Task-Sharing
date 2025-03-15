@@ -12,14 +12,12 @@ const auth_1 = __importDefault(require("./routes/auth"));
 const tasks_1 = __importDefault(require("./routes/tasks"));
 const friends_1 = __importDefault(require("./routes/friends"));
 const users_1 = __importDefault(require("./routes/users"));
+// import WebSocketService from "./services/websocket/WebSocketService";
+const config_1 = __importDefault(require("./config"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
-const PORT = process.env.PORT || 5000;
 // Middleware
-app.use((0, cors_1.default)({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173", // Vite's default port
-    credentials: true, // Important for cookies
-}));
+app.use((0, cors_1.default)(config_1.default.corsOptions));
 app.use((0, cookie_parser_1.default)());
 app.use(express_1.default.json());
 app.use((req, res, next) => {
@@ -38,16 +36,28 @@ app.use((req, res, next) => {
     });
     next();
 });
-// Database connection
-mongoose_1.default
-    .connect(process.env.MONGODB_URI || "mongodb://localhost:27017/task-tracker")
-    .then(() => console.log("Connected to MongoDB"))
-    .catch((error) => console.error("MongoDB connection error:", error));
 // Routes
 app.use("/api/auth", auth_1.default);
 app.use("/api/tasks", tasks_1.default);
 app.use("/api/friends", friends_1.default);
 app.use("/api/users", users_1.default);
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+// Initialize WebSocket after database connection
+mongoose_1.default
+    .connect(config_1.default.mongoUri)
+    .then(() => {
+    console.log("Connected to MongoDB");
+    // Start Express server
+    app.listen(config_1.default.port, () => {
+        console.log(`Express server is running on port ${config_1.default.port}`);
+        // Initialize WebSocket server
+        try {
+            // const wsService = WebSocketService.getInstance();
+            // wsService.connect();
+            console.log("WebSocket server initialized");
+        }
+        catch (error) {
+            console.error("Failed to initialize WebSocket server:", error);
+        }
+    });
+})
+    .catch((error) => console.error("MongoDB connection error:", error));

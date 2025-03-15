@@ -12,7 +12,10 @@ router.post(
   auth,
   async (req: Request<{}, {}, TaskBody>, res: Response) => {
     try {
-      const task = await taskService.createTask(req.user?._id as unknown as string, req.body);
+      const task = await taskService.createTask(
+        req.user?._id as unknown as string,
+        req.body
+      );
       res.status(201).json(task);
     } catch (error) {
       res.status(400).json({ error: "Error creating task" });
@@ -23,15 +26,18 @@ router.post(
 // Get all tasks with filters
 router.get("/", auth, async (req: Request, res: Response) => {
   try {
-    const result = await taskService.getTasks(req.user?._id as unknown as string, {
-      status: req.query.status as string,
-      priority: req.query.priority as string,
-      tag: req.query.tag as string,
-      search: req.query.search as string,
-      sortBy: req.query.sortBy as string,
-      limit: parseInt(req.query.limit as string),
-      skip: parseInt(req.query.skip as string),
-    });
+    const result = await taskService.getTasks(
+      req.user?._id as unknown as string,
+      {
+        status: req.query.status as string,
+        priority: req.query.priority as string,
+        tag: req.query.tag as string,
+        search: req.query.search as string,
+        sortBy: req.query.sortBy as string,
+        limit: parseInt(req.query.limit as string),
+        skip: parseInt(req.query.skip as string),
+      }
+    );
 
     res.json(result);
   } catch (error) {
@@ -42,7 +48,10 @@ router.get("/", auth, async (req: Request, res: Response) => {
 // Get a specific task by ID
 router.get("/:id", auth, async (req: Request, res: Response) => {
   try {
-    const task = await taskService.getTaskById(req.params.id, req.user?._id as unknown as string);
+    const task = await taskService.getTaskById(
+      req.params.id,
+      req.user?._id as unknown as string
+    );
     res.json(task);
   } catch (error: any) {
     if (error.message === "Task not found") {
@@ -63,6 +72,7 @@ router.patch("/:id", auth, async (req: Request, res: Response) => {
     );
     res.json(task);
   } catch (error: any) {
+    console.log(error);
     if (error.message === "Task not found") {
       res.status(404).json({ error: error.message });
     } else if (error.message === "Invalid updates") {
@@ -76,7 +86,10 @@ router.patch("/:id", auth, async (req: Request, res: Response) => {
 // Delete a task
 router.delete("/:id", auth, async (req: Request, res: Response) => {
   try {
-    const task = await taskService.deleteTask(req.params.id, req.user?._id as unknown as string);
+    const task = await taskService.deleteTask(
+      req.params.id,
+      req.user?._id as unknown as string
+    );
     res.json({ message: "Task deleted successfully", task });
   } catch (error: any) {
     if (error.message === "Task not found") {
@@ -85,7 +98,7 @@ router.delete("/:id", auth, async (req: Request, res: Response) => {
       res.status(500).json({ error: "Error deleting task" });
     }
   }
-}); 
+});
 
 // Share a task with another user
 router.post("/:id/share", auth, async (req: Request, res: Response) => {
