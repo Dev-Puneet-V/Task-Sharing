@@ -6,6 +6,17 @@ import { TaskBody } from "../services/task/types";
 const router: Router = express.Router();
 const taskService = new TaskService();
 
+router.get("/stats", auth, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?._id as unknown as string;
+    const stats = await taskService.getTaskStats(userId);
+    res.json(stats);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error fetching task statistics" });
+  }
+});
+
 // Create a new task
 router.post(
   "/",

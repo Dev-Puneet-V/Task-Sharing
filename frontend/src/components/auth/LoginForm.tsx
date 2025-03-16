@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
-export const LoginForm: React.FC = () => {
+const LoginForm: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -100,3 +100,5 @@ export const LoginForm: React.FC = () => {
     </div>
   );
 };
+
+export default LoginForm;

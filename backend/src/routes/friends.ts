@@ -155,7 +155,7 @@ router.get("/my-shared-tasks", auth, async (req: Request, res: Response) => {
 
 // Unshare task with friends
 router.delete(
-  "/unshare-task/:taskId",
+  "/share-task/:taskId",
   auth,
   async (req: Request, res: Response) => {
     try {

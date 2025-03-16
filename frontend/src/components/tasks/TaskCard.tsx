@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import api from "../../utils/axios";
 import ShareTaskModal from "./ShareTaskModal";
 import { useAuth } from "../../context/AuthContext";
+import { useWebSocket } from "../../context/WebSocketContext";
 
 interface Friend {
   _id: string;
@@ -40,7 +41,7 @@ interface TaskCardProps {
   task: Task;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<void>;
   onDelete: (taskId: string) => Promise<void>;
-  onShare: (taskId: string, friendIds: string[]) => Promise<void>;
+  onShare: (taskId: string, friendIds: string[]) => Promise<{ data: any }>;
   onUnshare: (taskId: string, friendIds: string[]) => Promise<void>;
 }
 
@@ -65,6 +66,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
   onShare,
   onUnshare,
 }) => {
+  const { updateRoom } = useWebSocket();
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(task?.title);
   const [editedDescription, setEditedDescription] = useState(task?.description);
@@ -78,7 +80,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
   const { user } = useAuth();
 
   // Check if current user is the owner
-  const isOwner = user?._id === task?.owner._id;
+  const isOwner = user?._id === task?.owner?._id;
 
   const priorityColors = {
     low: "bg-green-100 text-green-800",
@@ -98,6 +100,11 @@ const TaskCard: React.FC<TaskCardProps> = ({
       await onUpdate(task?._id, {
         title: editedTitle,
         description: editedDescription,
+      });
+      updateRoom(task?._id, "TASK_UPDATE", {
+        ...task,
+        title: editedTitle,
+        description: editedDescription
       });
       setIsEditing(false);
     } catch (error) {
@@ -123,6 +130,11 @@ const TaskCard: React.FC<TaskCardProps> = ({
   const handleStatusChange = async (newStatus: Task["status"]) => {
     try {
       await onUpdate(task?._id, { status: newStatus });
+      updateRoom(task?._id, "TASK_UPDATE", {
+        ...task,
+        status: newStatus,
+        isStatusChanged: true
+      });
     } catch (error) {
       console.error("Error updating task status:", error);
     }
@@ -260,11 +272,11 @@ const TaskCard: React.FC<TaskCardProps> = ({
       </div>
 
       {/* Shared with section */}
-      {task?.sharedWith.length > 0 && (
+      {task?.sharedWith?.length > 0 && (
         <div className="mt-4 pt-4 border-t">
           <h4 className="text-sm font-medium mb-2">Shared with:</h4>
           <div className="flex flex-wrap gap-2">
-            {task?.sharedWith.map((user) => (
+            {task?.sharedWith?.map((user) => (
               <span
                 key={user._id}
                 className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"

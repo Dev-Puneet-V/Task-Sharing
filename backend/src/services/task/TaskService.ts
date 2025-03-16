@@ -1,8 +1,39 @@
 import mongoose, { Types } from "mongoose";
 import { Task } from "../../models/Task";
 import { TaskBody, TaskFilters, TaskQueryResult } from "./types";
+import { NotificationService } from "../notification/NotificationService";
 
 export class TaskService {
+  private notificationService: NotificationService;
+
+  constructor() {
+    this.notificationService = new NotificationService();
+  }
+
+  async isOwner(userId: string, taskId: string) {
+    const task = await Task.findOne({
+      _id: taskId,
+      owner: userId,
+    });
+    return !!task;
+  }
+
+  async getRights(userId: string, taskId: string) {
+    const rights = {
+      isAdmin: false,
+      isShared: false,
+    };
+    const task = await Task.findOne({
+      _id: taskId,
+      $or: [{ owner: userId }, { sharedWith: userId }],
+    });
+    rights.isAdmin = !!(task?.owner.toString() === userId.toString());
+    rights.isShared =
+      rights.isAdmin ||
+      !!task?.sharedWith?.some((user) => user.toString() === userId.toString());
+    return rights;
+  }
+
   async createTask(userId: string, taskData: TaskBody) {
     const task = new Task({
       ...taskData,
@@ -76,48 +107,61 @@ export class TaskService {
     return task;
   }
 
-  async updateTask(taskId: string, userId: string, updates: Partial<TaskBody>) {
-    const task = await Task.findOne({
-      _id: taskId,
-      $or: [{ owner: userId }, { sharedWith: userId }],
-    });
-
-    if (!task) {
-      throw new Error("Task not found");
-    }
-
-    // Only owner can update certain fields
-    if (task.owner.toString() !== userId.toString()) {
-      const allowedUpdates = ["status"];
-      const updateFields = Object.keys(updates);
-      const isValidOperation = updateFields.every((update) =>
-        allowedUpdates.includes(update)
-      );
-
-      if (!isValidOperation) {
-        throw new Error("Invalid updates");
+  async updateTask(
+    taskId: string,
+    ownerId: string,
+    updates: Partial<TaskBody>
+  ) {
+    try {
+      const task = await Task.findOne({ _id: taskId });
+      if (!task) {
+        throw new Error("Task not found");
       }
+
+      // Update task
+      Object.assign(task, updates);
+      await task.save();
+
+      // Notify shared users about the update
+      for (const userId of task.sharedWith) {
+        await this.notificationService.createNotification(
+          userId.toString(),
+          "TASK_UPDATED",
+          `${task.title} has been updated`,
+          { taskId: task._id, title: task.title, updates }
+        );
+      }
+
+      return task;
+    } catch (error) {
+      console.error("Error updating task:", error);
+      throw error;
     }
-
-    Object.assign(task, { ...updates, updatedAt: new Date() });
-    await task.save();
-    await task.populate("owner", "name email");
-    await task.populate("sharedWith", "name email");
-
-    return task;
   }
 
-  async deleteTask(taskId: string, userId: string) {
-    const task = await Task.findOneAndDelete({
-      _id: taskId,
-      owner: userId,
-    });
+  async deleteTask(taskId: string, ownerId: string) {
+    try {
+      const task = await Task.findOne({ _id: taskId, owner: ownerId });
+      if (!task) {
+        throw new Error("Task not found");
+      }
 
-    if (!task) {
-      throw new Error("Task not found");
+      // Notify shared users about deletion
+      for (const userId of task.sharedWith) {
+        await this.notificationService.createNotification(
+          userId.toString(),
+          "TASK_DELETED",
+          `${task.title} has been deleted`,
+          { taskId: task._id, title: task.title }
+        );
+      }
+
+      await task.deleteOne();
+      return task;
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      throw error;
     }
-
-    return task;
   }
 
   async shareTask(taskId: string, ownerId: string, targetUserId: string) {
@@ -145,29 +189,36 @@ export class TaskService {
     ownerId: string,
     friendIds: string[]
   ) {
-    const task = await Task.findById(taskId).populate(
-      "owner",
-      "_id name email"
-    );
-    if (!task) {
-      throw new Error("Task not found");
-    }
-    if (task.owner._id.toString() !== ownerId.toString()) {
-      throw new Error("Not authorized to share this task");
-    }
+    try {
+      const task = await Task.findOne({ _id: taskId, owner: ownerId });
+      if (!task) {
+        throw new Error("Task not found");
+      }
 
-    // Filter out friends who already have the task shared with them
-    const newFriendIds = friendIds.filter(
-      (friendId) => !task.sharedWith.includes(friendId as any)
-    );
-
-    if (newFriendIds.length > 0) {
-      task.sharedWith.push(...(newFriendIds as any[]));
+      // Add new friends to sharedWith array
+      task.sharedWith = [
+        ...(task.sharedWith as mongoose.Types.ObjectId[]),
+        ...friendIds.map((id) => new mongoose.Types.ObjectId(id)),
+      ];
       await task.save();
+      await task.populate("owner", "name email");
       await task.populate("sharedWith", "name email");
-    }
 
-    return task;
+      // Create notifications for each friend
+      for (const friendId of friendIds) {
+        await this.notificationService.createNotification(
+          friendId,
+          "TASK_SHARED",
+          `${task.title} has been shared with you`,
+          { taskId: task._id, title: task.title }
+        );
+      }
+
+      return task;
+    } catch (error) {
+      console.error("Error sharing task:", error);
+      throw error;
+    }
   }
 
   async getTasksSharedWithMe(userId: string) {
@@ -194,25 +245,73 @@ export class TaskService {
   }
 
   async unshareTask(taskId: string, ownerId: string, friendIds: string[]) {
-    const task = await Task.findOne({
-      _id: taskId,
-      owner: ownerId,
-    });
+    try {
+      const task = await Task.findOne({ _id: taskId, owner: ownerId });
+      if (!task) {
+        throw new Error("Task not found");
+      }
 
-    if (!task) {
-      throw new Error("Task not found");
+      // Remove friends from sharedWith array
+      task.sharedWith = task.sharedWith.filter(
+        (id) => !friendIds.includes(id.toString())
+      );
+      await task.save();
+      await task.populate("owner", "name email");
+      await task.populate("sharedWith", "name email");
+
+      // Create notifications for each friend
+      for (const friendId of friendIds) {
+        await this.notificationService.createNotification(
+          friendId,
+          "TASK_UNSHARED",
+          `${task.title} is no longer shared with you`,
+          { taskId: task._id, title: task.title }
+        );
+      }
+
+      return task;
+    } catch (error) {
+      console.error("Error unsharing task:", error);
+      throw error;
     }
+  }
 
-    // Remove the specified friends from sharedWith array
-    task.sharedWith = task.sharedWith.filter(
-      (userId) => !friendIds.includes(userId.toString())
-    );
+  async getTaskStats(userId: string) {
+    try {
+      const [total, completed, inProgress, pending, highPriority, dueSoon] =
+        await Promise.all([
+          // Total tasks
+          Task.countDocuments({ owner: userId }),
+          // Completed tasks
+          Task.countDocuments({ owner: userId, status: "completed" }),
+          // In progress tasks
+          Task.countDocuments({ owner: userId, status: "in_progress" }),
+          // Pending tasks
+          Task.countDocuments({ owner: userId, status: "pending" }),
+          // High priority tasks
+          Task.countDocuments({ owner: userId, priority: "high" }),
+          // Tasks due within 3 days
+          Task.countDocuments({
+            owner: userId,
+            dueDate: {
+              $gte: new Date(),
+              $lte: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+            },
+          }),
+        ]);
 
-    await task.save();
-    await task.populate("owner", "name email");
-    await task.populate("sharedWith", "name email");
-
-    return task;
+      return {
+        total,
+        completed,
+        inProgress,
+        pending,
+        highPriority,
+        dueSoon,
+      };
+    } catch (error) {
+      console.error("Error getting task statistics:", error);
+      throw new Error("Failed to get task statistics");
+    }
   }
 }
 

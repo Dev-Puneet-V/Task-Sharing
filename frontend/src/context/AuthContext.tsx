@@ -18,7 +18,7 @@ interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,7 +31,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   );
   const [user, setUser] = useState<User | null>(null);
 
-  // Fetch user data if authenticated
   useEffect(() => {
     const fetchUser = async () => {
       if (isAuthenticated && !user) {
@@ -40,7 +39,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           setUser(data);
         } catch (error) {
           console.error("Error fetching user:", error);
-          logout();
+          await logout();
         }
       }
     };
@@ -51,8 +50,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const login = async (email: string, password: string) => {
     try {
       const { data } = await api.post("/auth/login", { email, password });
-      console.log(data);
-      // The cookie will be automatically set by the browser due to our backend configuration
       setIsAuthenticated(true);
       setUser(data.user);
     } catch (error: any) {
@@ -67,8 +64,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         email,
         password,
       });
-
-      // The cookie will be automatically set by the browser due to our backend configuration
       setIsAuthenticated(true);
       setUser(data.user);
     } catch (error: any) {
@@ -76,17 +71,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const logout = () => {
-    api
-      .post("/auth/logout")
-      .then(() => {
-        // Cookie will be removed by the backend
-        setIsAuthenticated(false);
-        setUser(null);
-      })
-      .catch((error) => {
-        console.error("Error during logout:", error);
-      });
+  const logout = async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch (error) {
+      console.error("Error during logout:", error);
+    } finally {
+      // Clear cookie and state regardless of API call success
+      Cookies.remove("token");
+      setIsAuthenticated(false);
+      setUser(null);
+      // Clear any cached API state
+      delete api.defaults.headers.common["Authorization"];
+    }
   };
 
   return (

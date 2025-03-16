@@ -7,8 +7,10 @@ import authRoutes from "./routes/auth";
 import taskRoutes from "./routes/tasks";
 import friendRoutes from "./routes/friends";
 import userRoutes from "./routes/users";
-// import WebSocketService from "./services/websocket/WebSocketService";
+import notificationRoutes from "./routes/notifications";
+import WebSocketService from "./services/websocket/WebSocketService";
 import config from "./config";
+import { apiLimiter, authLimiter } from "./middleware/rateLimiter";
 
 dotenv.config();
 
@@ -18,6 +20,11 @@ const app = express();
 app.use(cors(config.corsOptions));
 app.use(cookieParser());
 app.use(express.json());
+
+// // Apply rate limiting
+// app.use("/api/", apiLimiter); // Apply to all API routes
+// app.use("/api/auth/", authLimiter); // Apply stricter limits to auth routes
+
 app.use((req, res, next) => {
   const start = Date.now();
   const timestamp = new Date().toISOString();
@@ -46,6 +53,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/friends", friendRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // Initialize WebSocket after database connection
 mongoose
@@ -59,8 +67,8 @@ mongoose
 
       // Initialize WebSocket server
       try {
-        // const wsService = WebSocketService.getInstance();
-        // wsService.connect();
+        const wsService = WebSocketService.getInstance();
+        wsService.connect();
         console.log("WebSocket server initialized");
       } catch (error) {
         console.error("Failed to initialize WebSocket server:", error);

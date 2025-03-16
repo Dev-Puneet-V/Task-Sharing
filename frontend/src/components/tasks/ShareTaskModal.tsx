@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { XMarkIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import api from "../../utils/axios";
+import { useWebSocket } from "../../context/WebSocketContext";
 
 interface Friend {
   _id: string;
@@ -12,7 +13,7 @@ interface ShareTaskModalProps {
   taskId: string;
   currentSharedWith: Friend[];
   onClose: () => void;
-  onShare: (taskId: string, friendIds: string[]) => Promise<void>;
+  onShare: (taskId: string, friendIds: string[]) => Promise<{ data: any }>;
   onUnshare: (taskId: string, friendIds: string[]) => Promise<void>;
 }
 
@@ -23,6 +24,7 @@ const ShareTaskModal: React.FC<ShareTaskModalProps> = ({
   onShare,
   onUnshare,
 }) => {
+  const { updateRoom } = useWebSocket();
   const [friends, setFriends] = useState<Friend[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -60,10 +62,11 @@ const ShareTaskModal: React.FC<ShareTaskModalProps> = ({
     if (selectedFriends.length === 0) return;
 
     try {
-      await onShare(
+      const response = await onShare(
         taskId,
         selectedFriends.map((f) => f._id)
       );
+      updateRoom(taskId, "SHARE_TASK", response.data);
       onClose();
     } catch (err) {
       console.error("Error sharing task:", err);
@@ -75,6 +78,7 @@ const ShareTaskModal: React.FC<ShareTaskModalProps> = ({
   const handleUnshare = async (friendId: string) => {
     try {
       await onUnshare(taskId, [friendId]);
+      updateRoom(taskId, "UNSHARE_TASK", { _id: taskId });
       // Remove from currentSharedWith in parent component
     } catch (err) {
       console.error("Error unsharing task:", err);
@@ -109,7 +113,7 @@ const ShareTaskModal: React.FC<ShareTaskModalProps> = ({
           </div>
 
           {/* Currently shared with */}
-          {currentSharedWith.length > 0 && (
+          {currentSharedWith?.length > 0 && (
             <div className="mb-4">
               <h3 className="text-sm font-semibold mb-2">Shared with</h3>
               <div className="space-y-2">
@@ -149,10 +153,10 @@ const ShareTaskModal: React.FC<ShareTaskModalProps> = ({
             ) : (
               <div className="space-y-2">
                 {filteredFriends.map((friend) => {
-                  const isSelected = selectedFriends.some(
+                  const isSelected = selectedFriends?.some(
                     (f) => f._id === friend._id
                   );
-                  const isAlreadyShared = currentSharedWith.some(
+                  const isAlreadyShared = currentSharedWith?.some(
                     (f) => f._id === friend._id
                   );
 

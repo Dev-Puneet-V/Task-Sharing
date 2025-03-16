@@ -6,13 +6,16 @@ import {
   ClipboardDocumentListIcon,
   ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
+import NotificationBell from "../notifications/NotificationBell";
+import { useAuth } from "../../context/AuthContext";
 
 export const Navigation = () => {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
+  const { logout } = useAuth();
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    logout();
     navigate("/login");
   };
 
@@ -50,7 +53,8 @@ export const Navigation = () => {
               </Link>
             </div>
           </div>
-          <div className="hidden sm:ml-6 sm:flex sm:items-center">
+          <div className="hidden sm:ml-6 sm:flex sm:items-center space-x-4">
+            <NotificationBell />
             <button
               onClick={handleLogout}
               className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-50"
@@ -130,6 +134,9 @@ export const Navigation = () => {
               Profile
             </div>
           </Link>
+          <div className="block pl-3 pr-4 py-2 border-l-4 border-transparent">
+            <NotificationBell />
+          </div>
           <button
             onClick={handleLogout}
             className="block w-full text-left pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-indigo-500"
