@@ -21,7 +21,7 @@ const config = {
         callback(null, true);
         return;
       }
-
+      console.log(ALLOWED_ORIGINS, origin);
       if (ALLOWED_ORIGINS.indexOf(origin) !== -1) {
         callback(null, true);
       } else {
