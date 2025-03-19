@@ -10,7 +10,6 @@ import userRoutes from "./routes/users";
 import notificationRoutes from "./routes/notifications";
 import WebSocketService from "./services/websocket/WebSocketService";
 import config from "./config";
-import { apiLimiter, authLimiter } from "./middleware/rateLimiter";
 
 dotenv.config();
 

@@ -1,0 +1,10 @@
+version: "3.8"
+services:
+  backend:
+    build: backend
+    ports:
+      - "5000:5000" # REST API
+      - "5001:5001" # WebSockets
+    env_file:
+      - ./backend/.env
+    restart: always
