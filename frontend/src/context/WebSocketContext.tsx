@@ -5,9 +5,8 @@ import {
   useState,
   useCallback,
 } from "react";
-import { useAuth } from "./AuthContext";
 
-const WEBSOCKET_URL = "ws://localhost:5001";
+const WEBSOCKET_URL = import.meta.env.VITE_WS_URL || "ws://localhost:5000";
 
 interface WebSocketContextType {
   ws: WebSocket | null;
@@ -32,7 +31,6 @@ const webSocketContext = createContext<WebSocketContextType | undefined>(
 export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { isAuthenticated } = useAuth();
   const [ws, setWs] = useState<WebSocket | null>(null);
 
   useEffect(() => {

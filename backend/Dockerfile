@@ -11,8 +11,8 @@ RUN npm install --omit=dev
 # Copy the rest of the application code
 COPY . .
 
-# Expose the necessary ports (REST API + WebSockets)
-EXPOSE 5000 5001
+# Expose the port for both HTTP and WebSocket
+EXPOSE 5000
 
 # Run the backend
 CMD ["npm", "start"]

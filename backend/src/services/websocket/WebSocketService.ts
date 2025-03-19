@@ -3,6 +3,7 @@ import config from "../../config";
 import { verifyToken } from "../../utils/auth";
 import { cookieParse } from "../../utils/helpers";
 import TaskService from "../task/TaskService";
+import { Server } from "http";
 
 interface WebSocketClient {
   ws: WebSocket;
@@ -23,42 +24,35 @@ class WebSocketService {
   private clients: Map<string, WebSocketClient>;
   private taskService: TaskService | null = null;
 
-  private constructor() {
+  private constructor(server: Server) {
     this.clients = new Map();
-    this.wss = new WebSocketServer(
-      {
-        port: config.wsPort as unknown as number,
-        verifyClient: async (info, cb) => {
-          try {
-            // Origin verification
-            const originValid = await this.verifyOrigin(info.origin);
-            if (!originValid) {
-              cb(false, 403, "Origin not allowed");
-              return;
-            }
-
-            // Authentication
-            const userId = await this.authenticateClient(
-              info.req.headers.cookie
-            );
-            if (!userId) {
-              cb(false, 401, "Unauthorized");
-              return;
-            }
-
-            // Attach userId to request for later use
-            (info.req as any).userId = userId;
-            cb(true);
-          } catch (error) {
-            console.error("WebSocket verification error:", error);
-            cb(false, 500, "Internal server error");
+    this.wss = new WebSocketServer({
+      server,
+      verifyClient: async (info, cb) => {
+        try {
+          // Origin verification
+          const originValid = await this.verifyOrigin(info.origin);
+          if (!originValid) {
+            cb(false, 403, "Origin not allowed");
+            return;
           }
-        },
+
+          // Authentication
+          const userId = await this.authenticateClient(info.req.headers.cookie);
+          if (!userId) {
+            cb(false, 401, "Unauthorized");
+            return;
+          }
+
+          // Attach userId to request for later use
+          (info.req as any).userId = userId;
+          cb(true);
+        } catch (error) {
+          console.error("WebSocket verification error:", error);
+          cb(false, 500, "Internal server error");
+        }
       },
-      () => {
-        console.log(`WebSocket server starting on port ${config.wsPort}`);
-      }
-    );
+    });
   }
 
   private getTaskService(): TaskService {
@@ -83,11 +77,11 @@ class WebSocketService {
     return await verifyToken(parsedCookie.token);
   }
 
-  public static getInstance(): WebSocketService {
-    if (!WebSocketService.instance) {
-      WebSocketService.instance = new WebSocketService();
+  public static getInstance(server?: Server): WebSocketService {
+    if (!WebSocketService.instance && server) {
+      WebSocketService.instance = new WebSocketService(server);
     }
-    return WebSocketService.instance;
+    return WebSocketService.instance!;
   }
 
   public getWss() {
@@ -96,7 +90,7 @@ class WebSocketService {
 
   public connect() {
     this.wss.on("listening", () => {
-      console.log(`WebSocket server is listening on port ${config.wsPort}`);
+      console.log(`WebSocket server is listening on port ${config.port}`);
     });
 
     this.wss.on("connection", (ws: WebSocket, request: any) => {

@@ -8,7 +8,6 @@ const ALLOWED_ORIGINS = [
 
 const config = {
   port: process.env.PORT || 5000,
-  wsPort: process.env.WEBSOCKET_PORT || 5001,
   mongoUri: process.env.MONGODB_URI || "mongodb://localhost:27017/task-tracker",
   jwtSecret: process.env.JWT_SECRET || "your-secret-key",
   allowedOrigins: ALLOWED_ORIGINS,

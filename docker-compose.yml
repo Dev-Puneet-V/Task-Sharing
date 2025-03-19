@@ -3,8 +3,19 @@ services:
   backend:
     build: backend
     ports:
-      - "5000:5000" # REST API
-      - "5001:5001" # WebSockets
+      - "5000:5000" # HTTP and WebSocket
     env_file:
       - ./backend/.env
     restart: always
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+volumes:
+  mongodb_data:

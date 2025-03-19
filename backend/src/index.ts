@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
+import { createServer } from "http";
 import authRoutes from "./routes/auth";
 import taskRoutes from "./routes/tasks";
 import friendRoutes from "./routes/friends";
@@ -19,6 +20,9 @@ const app = express();
 app.use(cors(config.corsOptions));
 app.use(cookieParser());
 app.use(express.json());
+
+// Create HTTP server
+const server = createServer(app);
 
 // // Apply rate limiting
 // app.use("/api/", apiLimiter); // Apply to all API routes
@@ -60,13 +64,13 @@ mongoose
   .then(() => {
     console.log("Connected to MongoDB");
 
-    // Start Express server
-    app.listen(config.port, () => {
-      console.log(`Express server is running on port ${config.port}`);
+    // Start HTTP server
+    server.listen(config.port, () => {
+      console.log(`Server is running on port ${config.port}`);
 
       // Initialize WebSocket server
       try {
-        const wsService = WebSocketService.getInstance();
+        const wsService = WebSocketService.getInstance(server);
         wsService.connect();
         console.log("WebSocket server initialized");
       } catch (error) {
