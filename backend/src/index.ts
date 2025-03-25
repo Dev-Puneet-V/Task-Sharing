@@ -65,7 +65,7 @@ mongoose
     console.log("Connected to MongoDB");
 
     // Start HTTP server
-    server.listen(config.port, () => {
+    server.listen(config.port, async () => {
       console.log(`Server is running on port ${config.port}`);
 
       // Initialize WebSocket server

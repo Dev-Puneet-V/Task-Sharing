@@ -78,6 +78,7 @@ class WebSocketService {
   }
 
   public static getInstance(server?: Server): WebSocketService {
+    console.log("Called");
     if (!WebSocketService.instance && server) {
       WebSocketService.instance = new WebSocketService(server);
     }

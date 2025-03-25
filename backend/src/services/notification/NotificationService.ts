@@ -2,10 +2,13 @@ import { Notification, INotification } from "../../models/Notification";
 import WebSocketService from "../websocket/WebSocketService";
 
 export class NotificationService {
-  private wsService: WebSocketService;
+  private wsService: WebSocketService | null = null;
 
-  constructor() {
-    this.wsService = WebSocketService.getInstance();
+  private getWebSocketService(): WebSocketService {
+    if (!this.wsService) {
+      this.wsService = WebSocketService.getInstance();
+    }
+    return this.wsService;
   }
 
   async createNotification(
@@ -24,8 +27,9 @@ export class NotificationService {
 
       await notification.save();
 
-      // Send real-time notification if user is connected
-      this.wsService.sendToUser(userId, "NOTIFICATION", notification);
+      // Get WebSocket service only when needed
+      const wsService = this.getWebSocketService();
+      wsService.sendToUser(userId, "NOTIFICATION", notification);
 
       return notification;
     } catch (error) {
@@ -67,6 +71,10 @@ export class NotificationService {
       if (!notification) {
         throw new Error("Notification not found");
       }
+
+      // Get WebSocket service only when needed
+      const wsService = this.getWebSocketService();
+      wsService.sendToUser(userId, "NOTIFICATION_READ", notification);
 
       return notification;
     } catch (error) {

@@ -50,6 +50,7 @@ const TaskList: React.FC = () => {
   const [filterPriority, setFilterPriority] = useState<
     Task["priority"] | "all"
   >("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [total, setTotal] = useState(0);
@@ -65,6 +66,7 @@ const TaskList: React.FC = () => {
       const params = {
         ...(filterStatus !== "all" && { status: filterStatus }),
         ...(filterPriority !== "all" && { priority: filterPriority }),
+        ...(searchQuery && { search: searchQuery }),
         sortBy: `${sortField}:${sortDirection}`,
         limit: limit.toString(),
         skip: ((page - 1) * limit).toString(),
@@ -90,7 +92,14 @@ const TaskList: React.FC = () => {
 
   useEffect(() => {
     fetchAllTasks();
-  }, [filterStatus, filterPriority, sortField, sortDirection, page]);
+  }, [
+    filterStatus,
+    filterPriority,
+    sortField,
+    sortDirection,
+    page,
+    searchQuery,
+  ]);
 
   useEffect(() => {
     taskInCurrentView?.forEach((task: Task) => {
@@ -327,6 +336,8 @@ const TaskList: React.FC = () => {
             <input
               type="text"
               placeholder="Search tasks..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="border rounded-md px-3 py-2 flex-grow"
             />
           </div>
