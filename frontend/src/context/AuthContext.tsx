@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import Cookies from "js-cookie";
 import api from "../utils/axios";
 
 interface User {
@@ -26,26 +25,23 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
-    !!Cookies.get("token")
-  );
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
-      if (isAuthenticated && !user) {
-        try {
-          const { data } = await api.get("/auth/me");
-          setUser(data);
-        } catch (error) {
-          console.error("Error fetching user:", error);
-          await logout();
-        }
+      try {
+        const { data } = await api.get("/auth/me");
+        setUser(data);
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error("Error fetching user:", error);
+        await logout();
       }
     };
 
     fetchUser();
-  }, [isAuthenticated]);
+  }, []);
 
   const login = async (email: string, password: string) => {
     try {
@@ -77,12 +73,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     } catch (error) {
       console.error("Error during logout:", error);
     } finally {
-      // Clear cookie and state regardless of API call success
-      Cookies.remove("token");
       setIsAuthenticated(false);
       setUser(null);
-      // Clear any cached API state
-      delete api.defaults.headers.common["Authorization"];
     }
   };
 
