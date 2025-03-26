@@ -2,6 +2,7 @@ import express, { Request, Response, Router } from "express";
 import { auth } from "../middleware/auth";
 import { TaskService } from "../services/task/TaskService";
 import { TaskBody } from "../services/task/types";
+import { Task } from "../models/Task";
 
 const router: Router = express.Router();
 const taskService = new TaskService();
@@ -37,21 +38,55 @@ router.post(
 // Get all tasks with filters
 router.get("/", auth, async (req: Request, res: Response) => {
   try {
-    const result = await taskService.getTasks(
-      req.user?._id as unknown as string,
-      {
-        status: req.query.status as string,
-        priority: req.query.priority as string,
-        tag: req.query.tag as string,
-        search: req.query.search as string,
-        sortBy: req.query.sortBy as string,
-        limit: parseInt(req.query.limit as string),
-        skip: parseInt(req.query.skip as string),
-      }
-    );
+    const {
+      status,
+      priority,
+      search,
+      sortBy = "createdAt:desc",
+      limit = 10,
+      skip = 0,
+    } = req.query;
 
-    res.json(result);
+    // Build query
+    const query: any = {
+      $or: [{ owner: req.user?._id }, { sharedWith: req.user?._id }],
+    };
+
+    // Add filters
+    if (status && status !== "all") {
+      query.status = status;
+    }
+
+    if (priority && priority !== "all") {
+      query.priority = priority;
+    }
+
+    // Add search
+    if (search && typeof search === "string") {
+      query.$text = { $search: search };
+    }
+
+    // Parse sort parameters
+    const [sortField, sortDirection] = (sortBy as string).split(":");
+
+    // Execute query
+    const tasks = await Task.find(query)
+      .sort({ [sortField]: sortDirection === "desc" ? -1 : 1 })
+      .skip(Number(skip))
+      .limit(Number(limit))
+      .populate("owner", "name email")
+      .populate("sharedWith", "name email");
+
+    // Get total count for pagination
+    const total = await Task.countDocuments(query);
+
+    res.json({
+      tasks,
+      total,
+      hasMore: total > Number(skip) + Number(limit),
+    });
   } catch (error) {
+    console.error("Error fetching tasks:", error);
     res.status(500).json({ error: "Error fetching tasks" });
   }
 });

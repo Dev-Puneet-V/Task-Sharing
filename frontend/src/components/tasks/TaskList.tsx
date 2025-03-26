@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense } from "react";
+import React, { useState, useEffect, lazy, Suspense, useCallback } from "react";
 import {
   PlusIcon,
   FunnelIcon,
@@ -12,6 +12,7 @@ import { useWebSocket } from "../../context/WebSocketContext";
 import { Route } from "react-router-dom";
 import Skeleton from "../common/Skeleton";
 import { useAuth } from "../../context/AuthContext";
+import debounce from "lodash/debounce";
 
 interface Task {
   _id: string;
@@ -59,6 +60,21 @@ const TaskList: React.FC = () => {
   const [showSharedTasks, setShowSharedTasks] = useState(false);
   const [sharedWithMeTasks, setSharedWithMeTasks] = useState<Task[]>([]);
   const [taskInCurrentView, setTaskInCurrentView] = useState<Task[]>([]);
+
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    debounce((query: string) => {
+      setSearchQuery(query);
+      setPage(1); // Reset to first page when searching
+    }, 500),
+    []
+  );
+
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    debouncedSearch(query);
+  };
 
   const fetchAllTasks = async () => {
     try {
@@ -334,8 +350,7 @@ const TaskList: React.FC = () => {
             <input
               type="text"
               placeholder="Search tasks..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={handleSearchChange}
               className="border rounded-md px-3 py-2 flex-grow"
             />
           </div>

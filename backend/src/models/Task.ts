@@ -53,4 +53,7 @@ const taskSchema = new Schema<ITask>(
   { timestamps: true }
 );
 
+// Add text indexes for search
+taskSchema.index({ title: "text", description: "text" });
+
 export const Task = mongoose.model<ITask>("Task", taskSchema);
