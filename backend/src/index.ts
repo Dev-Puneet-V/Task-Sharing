@@ -53,7 +53,7 @@ app.use((req, res, next) => {
 
 // Routes
 app.get("/check", (req, res) => {
-  res.send("Hello World");
+  res.status(200);
 });
 app.use("/api/auth", authRoutes);
 app.use("/api/tasks", taskRoutes);
