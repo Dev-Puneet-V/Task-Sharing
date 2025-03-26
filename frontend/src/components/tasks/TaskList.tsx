@@ -141,22 +141,20 @@ const TaskList: React.FC = () => {
             )
           );
         } else if (message.type === "SHARE_TASK") {
-          const newSharedTask = message.payload;
-          const isSharedWithMe = newSharedTask.sharedWith.some(
+          const { task, sharedWith } = message.payload;
+          const isSharedWithMe = sharedWith.some(
             (sharedUser: any) => sharedUser._id === user?._id
           );
+
           if (isSharedWithMe) {
             setSharedWithMeTasks((prevTasks) => {
-              const exists = prevTasks.some(
-                (task) => task._id === newSharedTask._id
-              );
-              return exists ? prevTasks : [...prevTasks, newSharedTask];
+              const exists = prevTasks.some((t) => t._id === task._id);
+              return exists ? prevTasks : [...prevTasks, task];
             });
           }
+
           setTasks((prevTasks) =>
-            prevTasks.map((task) =>
-              task._id === newSharedTask._id ? newSharedTask : task
-            )
+            prevTasks.map((t) => (t._id === task._id ? task : t))
           );
         }
       } catch (error) {
@@ -169,7 +167,7 @@ const TaskList: React.FC = () => {
         ws.onmessage = null;
       }
     };
-  }, [ws]);
+  }, [ws, user?._id]);
 
   const handleCreateTask = async (
     taskData: Omit<

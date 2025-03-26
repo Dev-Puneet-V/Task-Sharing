@@ -14,8 +14,12 @@ interface WebSocketContextType {
   leaveRoom: (roomId: string, roomType: string) => void;
   updateRoom: (
     roomId: string,
-    updateType: "TASK_UPDATE" | "UNSHARE_TASK" | "SHARE_TASK",
-    updates?: unknown
+    updateType: "UPDATE_ROOM",
+    updates: {
+      updateType: "TASK_UPDATE" | "SHARE_TASK" | "UNSHARE_TASK";
+      updates: any;
+      roomId: string;
+    }
   ) => void;
   sendMessage: (type: string, payload: any) => void;
   // isConnected: boolean;
@@ -111,16 +115,17 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
   const updateRoom = useCallback(
     (
       roomId: string,
-      updateType: "TASK_UPDATE" | "UNSHARE_TASK" | "SHARE_TASK",
-      updates?: unknown
+      updateType: "UPDATE_ROOM",
+      updates: {
+        updateType: "TASK_UPDATE" | "SHARE_TASK" | "UNSHARE_TASK";
+        updates: any;
+        roomId: string;
+      }
     ) => {
       if (!roomId.trim()) return;
       const info = JSON.stringify({
-        type: "UPDATE_ROOM",
-        payload: {
-          updateType,
-          updates,
-        },
+        type: updateType,
+        payload: updates,
       });
       ws?.send(info);
     },

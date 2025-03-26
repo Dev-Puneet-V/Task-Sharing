@@ -66,7 +66,18 @@ const ShareTaskModal: React.FC<ShareTaskModalProps> = ({
         taskId,
         selectedFriends.map((f) => f._id)
       );
-      updateRoom(taskId, "SHARE_TASK", response.data);
+
+      // Emit WebSocket event for task sharing
+      updateRoom(taskId, "UPDATE_ROOM", {
+        updateType: "SHARE_TASK",
+        updates: {
+          _id: taskId,
+          sharedWith: selectedFriends,
+          ...response.data,
+        },
+        roomId: taskId,
+      });
+
       onClose();
     } catch (err) {
       console.error("Error sharing task:", err);
@@ -78,8 +89,14 @@ const ShareTaskModal: React.FC<ShareTaskModalProps> = ({
   const handleUnshare = async (friendId: string) => {
     try {
       await onUnshare(taskId, [friendId]);
-      updateRoom(taskId, "UNSHARE_TASK", { _id: taskId });
-      // Remove from currentSharedWith in parent component
+      updateRoom(taskId, "UPDATE_ROOM", {
+        updateType: "UNSHARE_TASK",
+        updates: {
+          _id: taskId,
+          sharedWith: [friendId],
+        },
+        roomId: taskId,
+      });
     } catch (err) {
       console.error("Error unsharing task:", err);
       setError("Failed to unshare task");
